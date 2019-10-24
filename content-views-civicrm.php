@@ -209,8 +209,7 @@ class Content_Views_CiviCRM {
 	public function show_notice() {
 
 		printf(
-			__( '<div class="notice notice-error"><p>It looks like CiviCRM is not activated, Content Views CiviCRM integration requires CiviCRM to be installed and activated, alternatively you can install the <a href="%s" title="Content Views CiviCRM Remote Settings">Content Views CiviCRM Remote plugin</a> to connect to a remote CiviCRM instance.</p></div>', 'content-views-civicrm' ),
-			admin_url( 'https://github.com/mecachisenros/content-views-civicrm-remote' )
+			__( '<div class="notice notice-error"><p>It looks like CiviCRM is not activated, Content Views CiviCRM integration requires CiviCRM to be installed and activated.</p></div>', 'content-views-civicrm' )
 		);
 
 	}
