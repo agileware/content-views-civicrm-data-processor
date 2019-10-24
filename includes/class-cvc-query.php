@@ -68,7 +68,7 @@ class Content_Views_CiviCRM_Query {
 			parse_str( $_POST['query'], $query );
 			unset( $query['page'] );
 			foreach ( $query as $key => $value ) {
-				if ( $key == 'contact_name_search' ) {
+				if ( strpos($key, 'contact_name_search') !== false ) {
 					$params[ $key ] = [ "IN" => $this->search_contact_name( $value ) ];
 				} else {
 					$params[ $key ] = $value;
