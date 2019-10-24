@@ -41,6 +41,8 @@ class Content_Views_CiviCRM_Display {
 		add_filter( PT_CV_PREFIX_ . 'field_item_html', [ $this, 'contact_fields_html' ], 5, 3 );
 		add_filter( PT_CV_PREFIX_ . 'fields_html', [ $this, 'fields_html' ], 10, 2 );
 		add_filter( PT_CV_PREFIX_ . 'total_posts', [ $this, 'total_posts' ] );
+		add_filter( PT_CV_PREFIX_ . 'field_href', [ $this, 'field_href' ], 10, 2 );
+		add_filter( PT_CV_PREFIX_ . 'link_html', [ $this, 'link_html' ], 10, 2 );
 	}
 
 	/**
@@ -72,9 +74,9 @@ class Content_Views_CiviCRM_Display {
 		}
 		$args       = apply_filters( PT_CV_PREFIX_ . 'query_parameters', $args );
 		$api_params = $args['civicrm_api_params'];
-		$dp = $this->cvc->api->get_data_processor_by_id( $args['data_processor_id'] );
+		$dp         = $this->cvc->api->get_data_processor_by_id( $args['data_processor_id'] );
 		$result     = $this->cvc->api->call( $dp['api_entity'], $dp['api_count_action'], $api_params );
-		if ( !$result['is_error'] ) {
+		if ( ! $result['is_error'] ) {
 			return $result;
 		}
 
@@ -149,6 +151,56 @@ class Content_Views_CiviCRM_Display {
 
 		}, [] );
 
+	}
+
+	/**
+	 * the link url
+	 *
+	 * @param string $link
+	 * @param WP_Post $post
+	 *
+	 * @return string
+	 */
+	public function field_href( $link, $post ) {
+		if ( $post->post_type != 'civicrm' ) {
+			return $link;
+		}
+		static $url = null;
+		if ( $url === null ) {
+			$url = array_shift( PT_CV_Functions::settings_values_by_prefix(
+				PT_CV_PREFIX . 'civicrm_link_url',
+				true
+			) );
+		}
+
+		return $url ? $url . '?id=' . $post->ID : '';
+	}
+
+	/**
+	 * remove href from a tag
+	 *
+	 * @param string $html
+	 * @param array $args [wp_post, html, class]
+	 *
+	 * @return string
+	 */
+	public function link_html( $html, $args ) {
+		if ( $args[0]->post_type != 'civicrm' ) {
+			return $html;
+		}
+		static $url = null;
+		if ( $url === null ) {
+			$url = array_shift( PT_CV_Functions::settings_values_by_prefix(
+				PT_CV_PREFIX . 'civicrm_link_url',
+				true
+			) );
+		}
+		if ( ! empty( $url ) ) {
+			return $html;
+		}
+		$html = str_replace( 'href', '', $html );
+
+		return $html;
 	}
 
 	/**

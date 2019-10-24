@@ -52,13 +52,35 @@ class Content_Views_CiviCRM_Settings_Display {
 	public function filter_display_settings( $options ) {
 		// all post but civicrm_contact post type
 		$all_post_types_but_civicrm = array_diff( array_keys( PT_CV_Values::post_types() ), [ 'civicrm' ] );
+
 		return array_reduce( $options, function ( $options, $group ) use ( $all_post_types_but_civicrm ) {
 			if ( isset( $group['label']['text'] ) && $group['label']['text'] == 'Fields settings' ) {
 				// set dependence to all posts
 				// needed to toggle off field settings for contact post type
 				$group['dependence'] = [ 'content-type', $all_post_types_but_civicrm ];
+				$options[]           = $group;
+				$options[]           = [
+					'label'         => [ 'text' => __( 'CiviCRM link URL', 'content-views-civicrm' ) ],
+					'extra_setting' => [
+						'params' => [
+							'wrap-class' => PT_CV_Html::html_panel_group_class(),
+							'wrap-id'    => PT_CV_Html::html_panel_group_id( PT_CV_Functions::string_random() )
+						]
+					],
+					'dependence'    => [ 'content-type', [ 'civicrm' ] ],
+					'params'        => [
+						[
+							'type' => 'text',
+							'name' => 'civicrm_link_url',
+							'std'  => '',
+							'desc' => __( 'The url when the link get clicked. Note that the id will be passed as a parameter', 'content-views-civicrm' )
+						]
+					]
+				];
+			} else {
+				$options[] = $group;
 			}
-			$options[] = $group;
+
 			return $options;
 		}, [] );
 	}
