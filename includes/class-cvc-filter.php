@@ -95,12 +95,35 @@ class Content_Views_CiviCRM_Filter {
 		$result = $this->cvc->api->call_values( $dp['api_entity'], 'getfields', [ 'api_action' => $dp['api_action'] ] );
 		foreach ( $this->fields as $key => $field ) {
 			if ( $result[ $field['name'] ] && $result[ $field['name'] ]['options'] ) {
-				$field['options'] = $result[ $field['name'] ]['options'];
+				// WPCV-15 exception for state
+				if ( $field['configuration']['field'] == 'state_province_id' ) {
+					$field['options'] = $this->limit_state_options( $result[ $field['name'] ]['options'] );
+				} else {
+					$field['options'] = $result[ $field['name'] ]['options'];
+				}
 			}
 			$this->fields[ $key ] = $field;
 		}
 
 		return true;
+	}
+
+	/**
+	 * @param array $options the origin options
+	 *
+	 * @return array
+	 */
+	protected function limit_state_options( $options ) {
+		$setting = Civi::settings()->get( 'provinceLimit' );
+		$result = $this->cvc->api->call_values('StateProvince', 'get', [
+			'sequential' => 1,
+			'country_id' => ['IN' => $setting],
+		]);
+		$options = [];
+		foreach ( $result as $state ) {
+			$options[ $state['id'] ] = $state['name'];
+		}
+		return $options;
 	}
 
 	/**
