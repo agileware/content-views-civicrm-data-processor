@@ -54,6 +54,9 @@ class Content_Views_CiviCRM_Display {
 	 * @return mixed
 	 */
 	public function fields_html( $html, $post ) {
+		if ( $post->post_type != 'civicrm' ) {
+			return $html;
+		}
 		foreach ( $html as $key => $item ) {
 			if ( ! in_array( $key, array_keys( $this->fields ) ) ) {
 				unset( $html[ $key ] );
