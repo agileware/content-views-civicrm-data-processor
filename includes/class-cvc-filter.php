@@ -79,6 +79,7 @@ class Content_Views_CiviCRM_Filter {
 		}
 		$this->fields = $this->cvc->api->call_values( 'DataProcessorFilter', 'get', [
 			'sequential'        => 1,
+			'is_required'       => 0,
 			'is_exposed'        => 1,
 			'data_processor_id' => $this->dpid
 		] );
@@ -115,14 +116,15 @@ class Content_Views_CiviCRM_Filter {
 	 */
 	protected function limit_state_options( $options ) {
 		$setting = Civi::settings()->get( 'provinceLimit' );
-		$result = $this->cvc->api->call_values('StateProvince', 'get', [
+		$result  = $this->cvc->api->call_values( 'StateProvince', 'get', [
 			'sequential' => 1,
-			'country_id' => ['IN' => $setting],
-		]);
+			'country_id' => [ 'IN' => $setting ],
+		] );
 		$options = [];
 		foreach ( $result as $state ) {
 			$options[ $state['id'] ] = $state['name'];
 		}
+
 		return $options;
 	}
 

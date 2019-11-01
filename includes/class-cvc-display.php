@@ -96,7 +96,8 @@ class Content_Views_CiviCRM_Display {
 	 */
 	public function filter_all_display_settings( $args ) {
 		if ( empty( $this->fields ) ) {
-			$this->fields = $this->get_display_fields_by_data_processor( $args['data_processor_id'] );
+			$id           = current( PT_CV_Functions::settings_values_by_prefix( PT_CV_PREFIX . 'data_processor_id', true ) );
+			$this->fields = $this->get_display_fields_by_data_processor( $id );
 		}
 
 		$fields = $this->fields;

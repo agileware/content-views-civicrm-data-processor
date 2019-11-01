@@ -75,6 +75,20 @@ class Content_Views_CiviCRM_Query {
 				}
 			}
 		}
+		// hidden filters
+		$fields = $this->cvc->api->call_values( 'DataProcessorFilter', 'get', [
+			'sequential'        => 1,
+			'is_required'       => 1,
+			'is_exposed'        => 1,
+			'data_processor_id' => $id
+		] );
+		foreach ( $fields as $field ) {
+			if ( $field['name'] == 'user_contact_id' ) {
+				$params[$field['name']] = CRM_Core_Session::getLoggedInContactID();
+			}
+			// fixme all required filters should be an exception
+		}
+
 		$args['civicrm_api_params'] = $params;
 		$args['data_processor_id']  = $id;
 
