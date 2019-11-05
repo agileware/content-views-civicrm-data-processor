@@ -128,8 +128,22 @@ class Content_Views_CiviCRM_Display {
 		if ( empty( $this->fields ) ) {
 			$this->fields = $this->get_display_fields_by_data_processor( $post->data_processor_id );
 		}
+		// hide the label if the title start with 'hide_label'
+		$label_html = "<strong>{$this->fields[$field_name]}</strong>: ";
+		if ( strpos( $field_name, 'hide_label' ) === 0 ) {
+			$label_html = '';
+		}
+		// if it is a link
+		$value_html = $post->$field_name;
+		if ( strpos( $field_name, 'href' ) !== false ) {
+			$href = $post->$field_name;
+			if ( strpos( $post->$field_name, 'http' ) !== 0 ) {
+				$href = 'https://' . $href;
+			}
+			$value_html = "<a href='{$href}' target='_blank'>{$value_html}</a>";
+		}
 
-		return $html = "<div class='col-md-12 pt-cv-ctf-column'><div class='pt-cv-custom-fields pt-cv-ctf-post_field_1'><div class='pt-cv-ctf-value'><strong>{$this->fields[$field_name]}</strong>: {$post->$field_name}</div></div></div>";
+		return $html = "<div class='col-md-12 pt-cv-ctf-column'><div class='{$field_name} pt-cv-custom-fields pt-cv-ctf-post_field_1'><div class='pt-cv-ctf-value'>{$label_html}{$value_html}</div></div></div>";
 
 	}
 
