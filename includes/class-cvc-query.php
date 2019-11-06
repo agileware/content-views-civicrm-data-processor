@@ -141,6 +141,9 @@ class Content_Views_CiviCRM_Query {
 	public function bypass_query( $args ) {
 		// bypass query
 		add_filter( 'posts_pre_query', function ( $posts, $class ) use ( $args ) {
+			if ( $class->query['post_type'] !== 'civicrm' ) {
+				return $posts;
+			}
 			if ( empty( $args['data_processor_id'] ) ) {
 				return [];
 			}
