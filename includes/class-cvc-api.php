@@ -52,6 +52,7 @@ if ( ! class_exists( 'Content_Views_CiviCRM_Api' ) ) {
 
 		/**
 		 * Shorthand for getting data processor info
+		 *
 		 * @param $id
 		 *
 		 * @return mixed
@@ -60,12 +61,22 @@ if ( ! class_exists( 'Content_Views_CiviCRM_Api' ) ) {
 			if ( empty( $id ) ) {
 				throw new Exception( 'No id passed in.' );
 			}
-			$dp     = $this->call_values( 'DataProcessorOutput', 'get', [
+			$dp = $this->call_values( 'DataProcessorOutput', 'get', [
 				'sequential'        => 1,
 				'type'              => "api",
 				'data_processor_id' => $id
 			] );
+
 			return array_shift( $dp );
+		}
+
+		public function is_dp_enabled() {
+			static $entities = null;
+			if ( ! $entities ) {
+				$entities = $this->call_values( 'Entity', 'get', [] );
+			}
+
+			return in_array( 'DataProcessor', $entities );
 		}
 
 	}

@@ -32,7 +32,12 @@ class Content_Views_CiviCRM_Settings_Filter {
 		// add contact post type
 		add_filter( PT_CV_PREFIX_ . 'post_types_list', [ $this, 'filter_post_types_list' ] );
 		// contact filters
-		add_filter( PT_CV_PREFIX_ . 'filter_settings_final', [ $this, 'final_filter_settings' ] );
+		if ( has_filter( PT_CV_PREFIX_ . 'filter_settings_final' ) ) {
+			// our fork's filter
+			add_filter( PT_CV_PREFIX_ . 'filter_settings_final', [ $this, 'final_filter_settings' ] );
+		} else {
+			add_filter( PT_CV_PREFIX_ . 'custom_filters', [ $this, 'custom_filters' ] );
+		}
 	}
 
 	/**
@@ -51,6 +56,23 @@ class Content_Views_CiviCRM_Settings_Filter {
 		return $types;
 	}
 
+	/**
+	 * This filter can only add one setting block
+	 * and cannot modify other blocks dependencies
+	 * @param $options
+	 *
+	 * @return array
+	 */
+	public function custom_filters( $options ) {
+		if ( !empty( $options ) ) {
+			// Some other plugins using this filter
+			return $options;
+		}
+		$options = $this->get_civicrm_settings_block();
+
+		return $options;
+	}
+
 	public function final_filter_settings( $options ) {
 		$all_post_types_but_civicrm = array_diff( array_keys( PT_CV_Values::post_types() ), [ 'civicrm' ] );
 
@@ -61,61 +83,7 @@ class Content_Views_CiviCRM_Settings_Filter {
 				}
 				$options[] = $group;
 				if ( $group['label']['text'] == 'Content type' ) {
-					$options[] = [
-						'label'         => [ 'text' => __( 'CiviCRM filter', 'content-views-civicrm' ) ],
-						'extra_setting' => [
-							'params' => [
-								'wrap-class' => PT_CV_Html::html_panel_group_class(),
-								'wrap-id'    => PT_CV_Html::html_panel_group_id( PT_CV_Functions::string_random() )
-							]
-						],
-						'dependence'    => [ 'content-type', [ 'civicrm' ] ],
-						'params'        => [
-							[
-								'type'   => 'group',
-								'params' => [
-									// data processor
-									[
-										'label'  => [ 'text' => __( 'Data processor', 'content-views-civicrm' ) ],
-										'params' => [
-											[
-												'type'    => 'select',
-												'name'    => 'data_processor_id',
-												'options' => $this->get_data_processor(),
-												'class'   => 'select2',
-												'std'     => '',
-												'desc'    => __( 'Select the data you want to list here.', 'content-views-civicrm' )
-											]
-										]
-									],
-									// sort
-									[
-										'label'  => [ 'text' => __( 'Sorting', 'content-views-civicrm' ) ],
-										'params' => [
-											[
-												'type' => 'text',
-												'name' => 'civicrm_sort',
-												'std'  => '',
-												'desc' => __( 'Set the sorting order.', 'content-views-civicrm' )
-											]
-										]
-									],
-									// limit
-									[
-										'label'  => [ 'text' => __( 'Limit', 'content-views-civicrm' ) ],
-										'params' => [
-											[
-												'type' => 'number',
-												'name' => 'civicrm_limit',
-												'std'  => '',
-												'desc' => __( 'Set the limit of the result.', 'content-views-civicrm' )
-											]
-										]
-									],
-								]
-							]
-						]
-					];
+					$options[] = $this->get_civicrm_settings_block();
 				}
 
 				return $options;
@@ -123,7 +91,68 @@ class Content_Views_CiviCRM_Settings_Filter {
 			[] );
 	}
 
+	private function get_civicrm_settings_block() {
+		return [
+			'label'         => [ 'text' => __( 'CiviCRM filter', 'content-views-civicrm' ) ],
+			'extra_setting' => [
+				'params' => [
+					'wrap-class' => PT_CV_Html::html_panel_group_class(),
+					'wrap-id'    => PT_CV_Html::html_panel_group_id( PT_CV_Functions::string_random() )
+				]
+			],
+			'dependence'    => [ 'content-type', [ 'civicrm' ] ],
+			'params'        => [
+				[
+					'type'   => 'group',
+					'params' => [
+						// data processor
+						[
+							'label'  => [ 'text' => __( 'Data processor', 'content-views-civicrm' ) ],
+							'params' => [
+								[
+									'type'    => 'select',
+									'name'    => 'data_processor_id',
+									'options' => $this->get_data_processor(),
+									'class'   => 'select2',
+									'std'     => '',
+									'desc'    => __( 'Select the data you want to list here.', 'content-views-civicrm' )
+								]
+							]
+						],
+						// sort
+						[
+							'label'  => [ 'text' => __( 'Sorting', 'content-views-civicrm' ) ],
+							'params' => [
+								[
+									'type' => 'text',
+									'name' => 'civicrm_sort',
+									'std'  => '',
+									'desc' => __( 'Set the sorting order.', 'content-views-civicrm' )
+								]
+							]
+						],
+						// limit
+						[
+							'label'  => [ 'text' => __( 'Limit', 'content-views-civicrm' ) ],
+							'params' => [
+								[
+									'type' => 'number',
+									'name' => 'civicrm_limit',
+									'std'  => '',
+									'desc' => __( 'Set the limit of the result.', 'content-views-civicrm' )
+								]
+							]
+						],
+					]
+				]
+			]
+		];
+	}
+
 	private function get_data_processor() {
+		if ( ! $this->cvc->api->is_dp_enabled() ) {
+			return [];
+		}
 		$result  = $this->cvc->api->call_values( 'DataProcessorOutput', 'get', [
 			'sequential'                  => 1,
 			'type'                        => "api",
