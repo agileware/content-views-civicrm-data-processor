@@ -1,9 +1,8 @@
-# Content Views CiviCRM
+# Content Views CiviCRM with CiviCRM Data Processor
 
-Plugin integrating [Content Views](https://wordpress.org/plugins/content-views-query-and-display-post-page/) with [CiviCRM](https://civicrm.org).
-Requires [Data Processor](https://lab.civicrm.org/extensions/dataprocessor)
+Plugin for integrating [Content Views](https://wordpress.org/plugins/content-views-query-and-display-post-page/) with [CiviCRM](https://civicrm.org) using the [CiviCRM Data Processor](https://lab.civicrm.org/extensions/dataprocessor) as the data source.
 
-The Content Views CiviCRM is now integrated with **data processor** extension and it is required. Make sure you install data processor.
+[CiviCRM Data Processor](https://lab.civicrm.org/extensions/dataprocessor) must be installed in the CiviCRM site to use this integration with WordPress and CiviCRM.
 
 A quick guide to set up a data processor to be used in content views:
 - add a data processor
