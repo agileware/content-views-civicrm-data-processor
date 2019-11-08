@@ -17,9 +17,17 @@ A quick guide to set up a data processor to be used in content views:
 
 Then, you can go to content views and select civicrm content type. You will find it under the data processor dropdown. Preview it!
 
-## Add a live filter for contact name
+## Features with Content Views Pro
+CVP provides live filters to end user. This plugin will convert the filters in DP into CVP live filters.
+
+### Add a live filter for contact name
 - add a filter to the data processor
 - the filter field is contact id
 - give whatever the title you want
 - change the name to *contact_name_search* 
 - save it
+
+## Note
+This plugin is still WIP.
+
+Apply the patch `patches/filter.patch` to the **Content Views** plugin. It will hide unused settings in the filter settings tab.
