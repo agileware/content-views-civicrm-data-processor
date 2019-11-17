@@ -29,15 +29,9 @@ class Content_Views_CiviCRM_Settings_Filter {
 	 * @since 0.1
 	 */
 	public function register_hooks() {
-		// add contact post type
 		add_filter( PT_CV_PREFIX_ . 'post_types_list', [ $this, 'filter_post_types_list' ] );
-		// contact filters
-		if ( has_filter( PT_CV_PREFIX_ . 'filter_settings_final' ) ) {
-			// our fork's filter
-			add_filter( PT_CV_PREFIX_ . 'filter_settings_final', [ $this, 'final_filter_settings' ] );
-		} else {
-			add_filter( PT_CV_PREFIX_ . 'custom_filters', [ $this, 'custom_filters' ] );
-		}
+		add_filter( PT_CV_PREFIX_ . 'filter_settings_final', [ $this, 'final_filter_settings' ] );
+		add_filter( PT_CV_PREFIX_ . 'custom_filters', [ $this, 'custom_filters' ] );
 	}
 
 	/**
@@ -59,12 +53,13 @@ class Content_Views_CiviCRM_Settings_Filter {
 	/**
 	 * This filter can only add one setting block
 	 * and cannot modify other blocks dependencies
+	 *
 	 * @param $options
 	 *
 	 * @return array
 	 */
 	public function custom_filters( $options ) {
-		if ( !empty( $options ) ) {
+		if ( ! empty( $options ) ) {
 			// Some other plugins using this filter
 			return $options;
 		}
@@ -78,6 +73,10 @@ class Content_Views_CiviCRM_Settings_Filter {
 
 		return array_reduce( $options,
 			function ( $options, $group ) use ( $all_post_types_but_civicrm ) {
+				if ( ! is_array( $group ) ) {
+					$options[] = $group;
+					return $options;
+				}
 				if ( $group['label']['text'] == 'Common' || $group['label']['text'] == 'Advance' ) {
 					$group['dependence'] = [ 'content-type', $all_post_types_but_civicrm ];
 				}
@@ -92,6 +91,13 @@ class Content_Views_CiviCRM_Settings_Filter {
 	}
 
 	private function get_civicrm_settings_block() {
+		// WPCV-24 We only want to add the settings block once
+		static $is_added = false;
+		if ( $is_added ) {
+			return [];
+		}
+		$is_added = true;
+
 		return [
 			'label'         => [ 'text' => __( 'CiviCRM filter', 'content-views-civicrm' ) ],
 			'extra_setting' => [
