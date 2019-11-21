@@ -13,12 +13,20 @@ class Content_Views_CiviCRM_Display {
 	protected $cvc;
 
 	/**
-	 * Contact fields.
+	 * fields.
 	 *
 	 * @since 0.1
 	 * @var array
 	 */
 	public $fields = [];
+
+	/**
+	 * fields for multi-value
+	 *
+	 * @since 0.1
+	 * @var array
+	 */
+	public $multi_value_fields = [];
 
 	/**
 	 * Constructor.
@@ -128,19 +136,28 @@ class Content_Views_CiviCRM_Display {
 		if ( empty( $this->fields ) ) {
 			$this->fields = $this->get_display_fields_by_data_processor( $post->data_processor_id );
 		}
-		// hide the label if the title start with 'hide_label'
 		$label_html = "<strong>{$this->fields[$field_name]}</strong>: ";
+		// hide the label if the title start with 'hide_label'
 		if ( strpos( $field_name, 'hide_label' ) === 0 ) {
 			$label_html = '';
 		}
-		// if it is a link
 		$value_html = $post->$field_name;
+		// if it is a link
 		if ( strpos( $field_name, 'href' ) !== false ) {
 			$href = $post->$field_name;
 			if ( strpos( $post->$field_name, 'http' ) !== 0 ) {
 				$href = 'https://' . $href;
 			}
 			$value_html = "<a href='{$href}' target='_blank'>{$value_html}</a>";
+		}
+		// display list if the field is multi-value field
+		if ( in_array( $field_name, $this->multi_value_fields ) ) {
+			$values = explode( ',', $post->$field_name );
+			$value_html = '';
+			foreach ( $values as $value ) {
+				$value_html .= "<li>$value</li>";
+			}
+			$value_html = "<ul>$value_html</ul>";
 		}
 
 		return $html = "<div class='col-md-12 pt-cv-ctf-column'><div class='{$field_name} pt-cv-custom-fields pt-cv-ctf-post_field_1'><div class='pt-cv-ctf-value'>{$label_html}{$value_html}</div></div></div>";
@@ -163,6 +180,10 @@ class Content_Views_CiviCRM_Display {
 		return array_reduce( $this->get_fields_for( $dp['api_entity'], $dp['api_action'] ), function ( $fields, $field ) {
 			if ( $field['api.return'] ) {
 				$fields[ $field['name'] ] = $field['title'];
+				// the only evidence for a multi-value field - options
+				if ( $field['options'] ) {
+					$this->multi_value_fields[] = $field['name'];
+				}
 			}
 
 			return $fields;
