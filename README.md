@@ -8,7 +8,8 @@ A quick guide to set up a data processor to be used in content views:
 - add a data processor
 - select your data sources
 - add an api output
-- select the fields, must include a field named id and a field named title (the field named id won't be displayed)
+- select the fields, must include a field named id (this field won't be displayed)
+- format the title in the **display settings -> title content**
 - select the filters - uncheck the exposed flag if you don't want it to be a live filter
 - (optional) set default value for filters
 - order the fields and filters in the way you want
