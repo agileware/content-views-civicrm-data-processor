@@ -59,8 +59,11 @@ class Content_Views_CiviCRM_Settings_Display {
 				// needed to toggle off field settings for contact post type
 				$group['dependence'] = [ 'content-type', $all_post_types_but_civicrm ];
 				$options[]           = $group;
+
+				// add field display settings for civi content
+				$prefix              = 'field-';
 				$options[]           = [
-					'label'         => [ 'text' => __( 'CiviCRM link URL', 'content-views-civicrm' ) ],
+					'label'         => [ 'text' => __('Title and links', 'content_views_civicrm') ],
 					'extra_setting' => [
 						'params' => [
 							'wrap-class' => PT_CV_Html::html_panel_group_class(),
@@ -70,10 +73,32 @@ class Content_Views_CiviCRM_Settings_Display {
 					'dependence'    => [ 'content-type', [ 'civicrm' ] ],
 					'params'        => [
 						[
-							'type' => 'text',
-							'name' => 'civicrm_link_url',
-							'std'  => '',
-							'desc' => __( 'The url when the link get clicked. Note that the id will be passed as a parameter', 'content-views-civicrm' )
+							'type'   => 'group',
+							'params' => [
+								[
+									'label' => ['text' => __('Title content', 'content_views_civicrm')],
+									'params' => [
+										[
+											'type' => 'text',
+											'name' => 'civicrm_title',
+											'std' => '',
+											'desc' => __('Use ${field_name} for placeholder', 'content_views_civicrm')
+										]
+									]
+								],
+								[
+									'label'  => [ 'text' => __( 'CiviCRM link URL', 'content-views-civicrm' ) ],
+									'params' => [
+										[
+											'type' => 'text',
+											'name' => 'civicrm_link_url',
+											'std'  => '',
+											'desc' => __( 'The url when the link get clicked. Note that the id will be passed as a parameter', 'content-views-civicrm' )
+										]
+									]
+								],
+								PT_CV_Settings::title_heading_tag( $prefix )
+							]
 						]
 					]
 				];

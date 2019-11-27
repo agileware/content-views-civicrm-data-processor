@@ -152,7 +152,7 @@ class Content_Views_CiviCRM_Display {
 		}
 		// display list if the field is multi-value field
 		if ( in_array( $field_name, $this->multi_value_fields ) ) {
-			$values = explode( ',', $post->$field_name );
+			$values     = explode( ',', $post->$field_name );
 			$value_html = '';
 			foreach ( $values as $value ) {
 				$value_html .= "<li>$value</li>";
@@ -216,7 +216,7 @@ class Content_Views_CiviCRM_Display {
 	}
 
 	/**
-	 * remove href from a tag
+	 * remove a tag if it is not a link
 	 *
 	 * @param string $html
 	 * @param array $args [wp_post, html, class]
@@ -237,7 +237,7 @@ class Content_Views_CiviCRM_Display {
 		if ( ! empty( $url ) ) {
 			return $html;
 		}
-		$html = str_replace( 'href', '', $html );
+		$html = preg_replace( '/<a.*>(.*)<\/a>/', '$1', $html );
 
 		return $html;
 	}

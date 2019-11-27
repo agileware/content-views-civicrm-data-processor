@@ -68,7 +68,7 @@ class Content_Views_CiviCRM_Query {
 			parse_str( $_POST['query'], $query );
 			unset( $query['page'] );
 			foreach ( $query as $key => $value ) {
-				if ( strpos($key, 'contact_name_search') !== false ) {
+				if ( strpos( $key, 'contact_name_search' ) !== false ) {
 					$params[ $key ] = [ "IN" => $this->search_contact_name( $value ) ];
 				} else {
 					$params[ $key ] = $value;
@@ -84,7 +84,7 @@ class Content_Views_CiviCRM_Query {
 		] );
 		foreach ( $fields as $field ) {
 			if ( $field['name'] == 'user_contact_id' ) {
-				$params[$field['name']] = CRM_Core_Session::getLoggedInContactID();
+				$params[ $field['name'] ] = CRM_Core_Session::getLoggedInContactID();
 			}
 			// fixme all required filters should be an exception
 		}
@@ -159,10 +159,20 @@ class Content_Views_CiviCRM_Query {
 			foreach ( $result as $item ) {
 				$post                    = new WP_Post( (object) [] );
 				$post->ID                = $item['id'];
-				$post->post_title        = $item['title'];
 				$post->post_type         = 'civicrm';
 				$post->filter            = 'raw'; // set to raw to bypass sanitization
 				$post->data_processor_id = $args['data_processor_id'];
+
+				// title - replace the placeholder with its value in current item
+				$title = current( PT_CV_Functions::settings_values_by_prefix( PT_CV_PREFIX . 'civicrm_title', true ) );
+				if ( ! empty( $title ) ) {
+					$title = preg_replace_callback( '/\${(.*)}/U',
+						function ( $matches ) use ( $item ) {
+							return $item[ $matches[1] ];
+						},
+						$title );
+				}
+				$post->post_title = $title;
 
 				// clean object
 				foreach ( $post as $prop => $value ) {
