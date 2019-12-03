@@ -70,6 +70,12 @@ class Content_Views_CiviCRM {
 	protected $filter;
 
 	/**
+	 * @since 0.1
+	 * @var object $dp_options Content_Views_CiviCRM_Dp_Option
+	 */
+	public $dp_options;
+
+	/**
 	 * CiviCRM Api object.
 	 *
 	 * @since 0.1
@@ -156,6 +162,7 @@ class Content_Views_CiviCRM {
 		include $this->path . 'includes/class-cvc-api.php';
 		include $this->path . 'includes/class-cvc-display.php';
 		include $this->path . 'includes/class-cvc-filter.php';
+		include $this->path . 'includes/class-cvc-dp-option.php';
 
 		/**
 		 * Broadcast that this plugin's files have bee included.
@@ -194,7 +201,7 @@ class Content_Views_CiviCRM {
 		$this->settings = new Content_Views_CiviCRM_Settings( $this );
 		$this->display = new Content_Views_CiviCRM_Display( $this );
 		$this->filter = new Content_Views_CiviCRM_Filter( $this );
-
+		$this->dp_options = new Content_Views_CiviCRM_Dp_Option( $this );
 	}
 
 	/**

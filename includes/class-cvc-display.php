@@ -138,12 +138,12 @@ class Content_Views_CiviCRM_Display {
 		}
 		$label_html = "<strong>{$this->fields[$field_name]}</strong>: ";
 		// hide the label if the title start with 'hide_label'
-		if ( strpos( $field_name, 'hide_label' ) === 0 ) {
+		if ( $this->has_option( $field_name, Content_Views_CiviCRM_Dp_Option::HIDE_LABEL) ) {
 			$label_html = '';
 		}
 		$value_html = $post->$field_name;
 		// if it is a link
-		if ( strpos( $field_name, 'href' ) !== false ) {
+		if ( $this->has_option( $field_name, Content_Views_CiviCRM_Dp_Option::HREF) ) {
 			$href = $post->$field_name;
 			if ( strpos( $post->$field_name, 'http' ) !== 0 ) {
 				$href = 'https://' . $href;
@@ -151,7 +151,7 @@ class Content_Views_CiviCRM_Display {
 			$value_html = "<a href='{$href}' target='_blank'>{$value_html}</a>";
 		}
 		// display list if the field is multi-value field
-		if ( in_array( $field_name, $this->multi_value_fields ) ) {
+		if ( $this->has_option( $field_name, Content_Views_CiviCRM_Dp_Option::LIST) ) {
 			$values     = explode( ',', $post->$field_name );
 			$value_html = '';
 			foreach ( $values as $value ) {
@@ -255,6 +255,10 @@ class Content_Views_CiviCRM_Display {
 
 		return $this->cvc->api->call_values( $entity, 'getfields', [ 'action' => $action ] );
 
+	}
+
+	private function has_option( $name, $option ) {
+		return $this->cvc->dp_options->has_option( $name, $option );
 	}
 
 }

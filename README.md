@@ -4,7 +4,7 @@ Plugin for integrating [Content Views](https://wordpress.org/plugins/content-vie
 
 [CiviCRM Data Processor](https://lab.civicrm.org/extensions/dataprocessor) must be installed in the CiviCRM site to use this integration with WordPress and CiviCRM.
 
-A quick guide to set up a data processor to be used in content views:
+## Quick guide
 - add a data processor
 - select your data sources
 - add an api output
@@ -26,6 +26,25 @@ CVP provides live filters to end user. This plugin will convert the filters in D
 - give whatever the title you want
 - change the name to *contact_name_search* 
 - save it
+
+## Filters
+The live filter only display filters with `exposed to user` and not `required`.
+
+One case to use a filter with both `exposed to user` and `required` is a filter for current contact id.
+
+## Extra options
+Set the extra options with the field name.
+
+Example:
+- To display a list: `field_name_cvc_l`
+- Check the href link and hide label: `field_name_cvc_rh`
+- `field_name` or `field_name_cvc_` for empty option
+```php
+	const HREF = 'r';
+	const HIDE_LABEL = 'h';
+	const LIST = 'l';
+	const USER_CONTACT_ID = 'i';
+```
 
 ## Note
 This plugin is still WIP.

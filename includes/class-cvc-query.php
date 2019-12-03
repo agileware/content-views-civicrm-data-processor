@@ -83,7 +83,7 @@ class Content_Views_CiviCRM_Query {
 			'data_processor_id' => $id
 		] );
 		foreach ( $fields as $field ) {
-			if ( $field['name'] == 'user_contact_id' ) {
+			if ( $this->cvc->dp_options->has_option( $field['name'], Content_Views_CiviCRM_Dp_Option::USER_CONTACT_ID ) ) {
 				$params[ $field['name'] ] = CRM_Core_Session::getLoggedInContactID();
 			}
 			// fixme all required filters should be an exception
