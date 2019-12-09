@@ -68,7 +68,7 @@ class Content_Views_CiviCRM_Query {
 			parse_str( $_POST['query'], $query );
 			unset( $query['page'] );
 			foreach ( $query as $key => $value ) {
-				if ( strpos( $key, 'contact_name_search' ) !== false ) {
+				if ( $this->cvc->dp_options->has_option( $key, Content_Views_CiviCRM_Dp_Option::CONTACT_NAME_SEARCH ) ) {
 					$params[ $key ] = [ "IN" => $this->search_contact_name( $value ) ];
 				} else {
 					$params[ $key ] = $value;
@@ -100,6 +100,7 @@ class Content_Views_CiviCRM_Query {
 			'sequential' => 1,
 			'return'     => [ "id" ],
 			'sort_name'  => $search,
+			'options'    => [ 'limit' => 0 ]
 		] );
 		$ids    = [];
 		foreach ( $result as $item ) {

@@ -6,6 +6,7 @@ class Content_Views_CiviCRM_Dp_Option {
 	const HIDE_LABEL = 'h';
 	const LIST = 'l';
 	const USER_CONTACT_ID = 'i';
+	const CONTACT_NAME_SEARCH = 's';
 
 	/**
 	 * Plugin instance reference.

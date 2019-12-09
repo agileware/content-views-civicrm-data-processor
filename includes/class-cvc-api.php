@@ -28,10 +28,10 @@ if ( ! class_exists( 'Content_Views_CiviCRM_Api' ) ) {
 
 			} catch ( CiviCRM_API3_Exception $e ) {
 
-				return WP_Error( 'CVC CiviCRM Api error', $e->getMessage(), $params );
+				wp_die($e->getMessage());
 
 			}
-
+			return [];
 		}
 
 		/**
