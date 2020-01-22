@@ -151,7 +151,7 @@ class Content_Views_CiviCRM_Display {
 			$value_html = "<a href='{$href}' target='_blank'>{$value_html}</a>";
 		}
 		// display list if the field is multi-value field
-		if ( $this->has_option( $field_name, Content_Views_CiviCRM_Dp_Option::LIST) ) {
+		if ( $this->has_option( $field_name, Content_Views_CiviCRM_Dp_Option::MULTIVALUE_LIST) ) {
 			$values     = explode( ',', $post->$field_name );
 			$value_html = '';
 			foreach ( $values as $value ) {
