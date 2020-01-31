@@ -38,7 +38,7 @@ class Content_Views_CiviCRM_Dp_Option {
 	}
 
 	public function has_option( $name, $option ) {
-		if ( ! $this->cached_options[ $name ] ) {
+		if ( !isset( $this->cached_options[ $name ] ) ) {
 			$this->parse( $name );
 		}
 

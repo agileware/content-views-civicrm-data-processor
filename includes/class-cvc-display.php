@@ -181,7 +181,7 @@ class Content_Views_CiviCRM_Display {
 			if ( $field['api.return'] ) {
 				$fields[ $field['name'] ] = $field['title'];
 				// the only evidence for a multi-value field - options
-				if ( $field['options'] ) {
+				if ( !empty( $field['options'] ) ) {
 					$this->multi_value_fields[] = $field['name'];
 				}
 			}
@@ -206,10 +206,11 @@ class Content_Views_CiviCRM_Display {
 		}
 		static $url = null;
 		if ( $url === null ) {
-			$url = array_shift( PT_CV_Functions::settings_values_by_prefix(
+			$settingsValueByPrefix = PT_CV_Functions::settings_values_by_prefix(
 				PT_CV_PREFIX . 'civicrm_link_url',
 				true
-			) );
+			);
+			$url = array_shift( $settingsValueByPrefix );
 		}
 
 		return $url ? $url . '?id=' . $post->ID : '';
@@ -229,10 +230,11 @@ class Content_Views_CiviCRM_Display {
 		}
 		static $url = null;
 		if ( $url === null ) {
-			$url = array_shift( PT_CV_Functions::settings_values_by_prefix(
+			$settingsValueByPrefix = PT_CV_Functions::settings_values_by_prefix(
 				PT_CV_PREFIX . 'civicrm_link_url',
 				true
-			) );
+			);
+			$url = array_shift( $settingsValueByPrefix );
 		}
 		if ( ! empty( $url ) ) {
 			return $html;

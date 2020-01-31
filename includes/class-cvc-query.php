@@ -64,7 +64,7 @@ class Content_Views_CiviCRM_Query {
 			$params['options']['offset'] = $args['offset'];
 		}
 		// live filters
-		if ( $_POST['query'] ) {
+		if ( !empty( $_POST['query'] ) ) {
 			parse_str( $_POST['query'], $query );
 			unset( $query['page'] );
 			foreach ( $query as $key => $value ) {
@@ -142,7 +142,7 @@ class Content_Views_CiviCRM_Query {
 	public function bypass_query( $args ) {
 		// bypass query
 		add_filter( 'posts_pre_query', function ( $posts, $class ) use ( $args ) {
-			if ( $class->query['post_type'] !== 'civicrm' ) {
+			if ( isset( $class->query['post_type'] ) && ( $class->query['post_type'] !== 'civicrm' ) ) {
 				return $posts;
 			}
 			if ( empty( $args['data_processor_id'] ) ) {
@@ -169,7 +169,7 @@ class Content_Views_CiviCRM_Query {
 				if ( ! empty( $title ) ) {
 					$title = preg_replace_callback( '/\${(.*)}/U',
 						function ( $matches ) use ( $item ) {
-							return $item[ $matches[1] ];
+							return !empty( $item[ $matches[1] ] ) ? $item[ $matches[1] ] : '' ;
 						},
 						$title );
 				}
