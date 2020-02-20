@@ -95,7 +95,7 @@ class Content_Views_CiviCRM_Display {
 	}
 
 	/**
-	 * Filter display settitngs.
+	 * Filter display settings.
 	 *
 	 * @param array $args The display args
 	 *
@@ -105,6 +105,10 @@ class Content_Views_CiviCRM_Display {
 	public function filter_all_display_settings( $args ) {
 		if ( empty( $this->fields ) ) {
 			$id           = current( PT_CV_Functions::settings_values_by_prefix( PT_CV_PREFIX . 'data_processor_id', true ) );
+			// in some case, this will be called in the public page - don't know why
+			if ( ! $id ) {
+				return $args;
+			}
 			$this->fields = $this->get_display_fields_by_data_processor( $id );
 		}
 
