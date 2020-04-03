@@ -259,7 +259,7 @@ class Content_Views_CiviCRM_Display {
 	 */
 	public function get_fields_for( $entity, $action ) {
 
-		return $this->cvc->api->call_values( $entity, 'getfields', [ 'action' => $action ] );
+		return $this->cvc->api->call_values( $entity, 'getfields', [ 'api_action' => $action ] );
 
 	}
 
