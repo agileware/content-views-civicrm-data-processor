@@ -64,7 +64,8 @@ class Content_Views_CiviCRM_Query {
 			$params['options']['limit'] = $pagination_limit;
 		}
 		$offset = CVP_LIVE_FILTER_QUERY::_get_page();
-		if ( $offset ) {
+		if ( $offset && $params['options']['limit'] ) {
+			$offset = ( $offset - 1 ) * $params['options']['limit'];
 			$params['options']['offset'] = $offset;
 		}
 		// live filters
