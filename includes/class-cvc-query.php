@@ -42,6 +42,9 @@ class Content_Views_CiviCRM_Query {
 	 * @since 0.1
 	 */
 	public function alter_query_parameters( $args ) {
+		if ( $args['post_type'] != 'civicrm' ) {
+			return $args;
+		}
 		$id                = current( PT_CV_Functions::settings_values_by_prefix( PT_CV_PREFIX . 'data_processor_id', true ) );
 		$sort              = current( PT_CV_Functions::settings_values_by_prefix( PT_CV_PREFIX . 'civicrm_sort', true ) );
 		$limit             = current( PT_CV_Functions::settings_values_by_prefix( PT_CV_PREFIX . 'civicrm_limit', true ) );
@@ -60,8 +63,9 @@ class Content_Views_CiviCRM_Query {
 		if ( $pagination_enable == 'yes' && ! empty( $pagination_limit ) ) {
 			$params['options']['limit'] = $pagination_limit;
 		}
-		if ( $args['offset'] ) {
-			$params['options']['offset'] = $args['offset'];
+		$offset = CVP_LIVE_FILTER_QUERY::_get_page();
+		if ( $offset ) {
+			$params['options']['offset'] = $offset;
 		}
 		// live filters
 		if ( !empty( $_POST['query'] ) ) {
