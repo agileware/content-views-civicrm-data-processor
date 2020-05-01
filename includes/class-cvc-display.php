@@ -86,6 +86,8 @@ class Content_Views_CiviCRM_Display {
 		$args       = apply_filters( PT_CV_PREFIX_ . 'query_parameters', $args );
 		$api_params = $args['civicrm_api_params'];
 		$dp         = $this->cvc->api->get_data_processor_by_id( $args['data_processor_id'] );
+		unset( $api_params['offset'] );
+		unset( $api_params['limit'] );
 		$result     = $this->cvc->api->call( $dp['api_entity'], $dp['api_count_action'], $api_params );
 		if ( ! $result['is_error'] ) {
 			return $result;
