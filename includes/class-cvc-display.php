@@ -158,7 +158,7 @@ class Content_Views_CiviCRM_Display {
 		}
 		// display list if the field is multi-value field
 		if ( $this->has_option( $field_name, Content_Views_CiviCRM_Dp_Option::MULTIVALUE_LIST) ) {
-			$values     = explode( ',', $post->$field_name );
+			$values     = array_filter(explode( ',', $post->$field_name ));
 			$value_html = '';
 			foreach ( $values as $value ) {
 				$value_html .= "<li>$value</li>";
