@@ -1,4 +1,4 @@
-# Content Views CiviCRM with CiviCRM Data Processor
+# Content Views CiviCRM - Content Views integration with the CiviCRM Data Processor
 
 Plugin for integrating [Content Views](https://wordpress.org/plugins/content-views-query-and-display-post-page/) with [CiviCRM](https://civicrm.org) using the [CiviCRM Data Processor](https://lab.civicrm.org/extensions/dataprocessor) as the data source.
 
@@ -9,6 +9,7 @@ Plugin for integrating [Content Views](https://wordpress.org/plugins/content-vie
 [Content Views](https://wordpress.org/plugins/content-views-query-and-display-post-page/) plugin must be installed in WordPress.
 
 ## Quick guide
+
 - add a data processor
 - select your data sources
 - add an api output
@@ -19,13 +20,17 @@ Plugin for integrating [Content Views](https://wordpress.org/plugins/content-vie
 - order the fields and filters in the way you want
 - save it
 
-Then, you can go to content views and select civicrm content type. You will find it under the data processor dropdown. Preview it!
+Then, you can go to content views and select civicrm content type. You will find it under the Data Processor dropdown. Preview it!
 
-## Features with Content Views Pro
-CVP provides live filters to end user. This plugin will convert the filters in DP into CVP live filters.
+## Content Views Pro is optional
+
+Content Views Pro is not required for this plugin to function. Content Views Pro provides a "live filters" feature in Content Views. If you want to use this feature then we recommend purchasing a [Content Views Pro subscription](https://www.contentviewspro.com/).
+
+The following patch [patches/filter.patch](https://github.com/agileware/content-views-civicrm-data-processor/blob/master/patches/filter.patch) needs to be applied to the **Content Views** plugin to then enable the CiviCRM options to be shown in the Filter Settings tab when using Content Views Pro. 
 
 ### Add a live filter for contact name
-- add a filter to the data processor
+
+- add a filter to the Data Processor
 - the filter field is contact id
 - give whatever the title you want
 - change the name to *contact_name_search* 
@@ -49,8 +54,3 @@ Example:
 	const LIST = 'l';
 	const USER_CONTACT_ID = 'i';
 ```
-
-## Note
-This plugin is still WIP.
-
-Apply the patch `patches/filter.patch` to the **Content Views** plugin. It will hide unused settings in the filter settings tab.
