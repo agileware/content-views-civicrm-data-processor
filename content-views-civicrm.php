@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Content Views CiviCRM
  * Description: CiviCRM integraton for Content Views.
- * Version: 0.1.5
+ * Version: 0.2.0
  * Author: Agileware
  * Author URI: https://github.com/agileware/content-views-civicrm
  * Plugin URI: https://github.com/agileware/content-views-civicrm
@@ -18,7 +18,7 @@ class Content_Views_CiviCRM {
 	 * @since 0.1
 	 * @var string $version
 	 */
-	protected $version = '0.1.5';
+	protected $version = '0.2.0';
 
 	/**
 	 * Pro dependency.
