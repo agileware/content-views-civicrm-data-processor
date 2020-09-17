@@ -10,15 +10,14 @@ Plugin for integrating [Content Views](https://wordpress.org/plugins/content-vie
 
 ## Quick guide
 
-- add a data processor
-- select your data sources
-- add an api output
-- select the fields, must include a field named id (this field won't be displayed)
-- format the title in the **display settings -> title content**
-- select the filters - uncheck the exposed flag if you don't want it to be a live filter
-- (optional) set default value for filters
-- order the fields and filters in the way you want
-- save it
+#### Add a new Data Processor in CiviCRM:
+1. Select your data sources
+1. Add an api output
+1. Select the fields, must include a field named id (this field won't be displayed).
+1. Select the filters - uncheck the exposed flag if you don't want it to be a live filter.
+1. (optional) set default value for filters
+1. order the fields and filters in the way you want
+1. save it
 
 Then, you can go to content views and select civicrm content type. You will find it under the Data Processor dropdown. Preview it!
 
@@ -42,15 +41,20 @@ The live filter only display filters with `exposed to user` and not `required`.
 One case to use a filter with both `exposed to user` and `required` is a filter for current contact id.
 
 ## Extra options
-Set the extra options with the field name.
+To control the display of fields you can modify the system name for each field in the data processor.
 
-Example:
+Set the extra options by appending `_cvc_XX` to the field name:
+- `r`: HREF: TODO How does this work?
+- `h`: Hide the field label.
+- `l`: Display a multivalue field as a HTML list.
+- `i`: User Contact ID: TODO How does this work?
+- `s`: Contact Name search: TODO How does this work?
+
+#### Examples:
 - To display a list: `field_name_cvc_l`
 - Check the href link and hide label: `field_name_cvc_rh`
 - `field_name` or `field_name_cvc_` for empty option
-```php
-	const HREF = 'r';
-	const HIDE_LABEL = 'h';
-	const LIST = 'l';
-	const USER_CONTACT_ID = 'i';
-```
+
+1. Create a field for contact display name.
+1. The default system name is `display_name`.
+1. To display without label change the system name to: `display_name_cvc_h`
