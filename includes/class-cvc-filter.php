@@ -97,7 +97,7 @@ class Content_Views_CiviCRM_Filter {
 		foreach ( $this->fields as $key => $field ) {
 			if ( $result[ $field['name'] ] && $result[ $field['name'] ]['options'] ) {
 				// WPCV-15 exception for state
-				if ( $field['configuration']['field'] == 'state_province_id' ) {
+				if ( strpos($field['configuration']['field'], 'state_province_id') !== false ) {
 					$field['options'] = $this->limit_state_options( $result[ $field['name'] ]['options'] );
 				} else {
 					$field['options'] = $result[ $field['name'] ]['options'];
