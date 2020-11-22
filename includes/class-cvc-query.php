@@ -164,6 +164,9 @@ class Content_Views_CiviCRM_Query {
 			$dp     = array_shift( $dp );
 			$result = $this->cvc->api->call_values( $dp['api_entity'], $dp['api_action'], $args['civicrm_api_params'] );
 
+			// clear posts from previous short codes
+			$posts = [];
+
 			// mock WP_Posts contacts
 			foreach ( $result as $item ) {
 				$post                    = new WP_Post( (object) [] );
