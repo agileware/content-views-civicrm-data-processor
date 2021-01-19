@@ -106,6 +106,9 @@ class Content_Views_CiviCRM_Query {
 		foreach ( $result as $item ) {
 			$ids[] = $item['id'];
 		}
+		if (empty($ids)) {
+			$ids[] = '0';
+		}
 
 		return $ids;
 	}
