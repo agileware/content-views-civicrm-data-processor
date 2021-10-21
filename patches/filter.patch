@@ -1,15 +1,12 @@
-Index: admin/views/view.php
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
-===================================================================
---- admin/views/view.php	(date 1570159575000)
-+++ admin/views/view.php	(date 1570659804000)
-@@ -466,6 +466,7 @@
+diff --git a/admin/views/view.php b/admin/views/view.php
+index fffb3b0ed..a6ff9d2cb 100644
+--- a/admin/views/view.php
++++ b/admin/views/view.php
+@@ -480,6 +480,7 @@ PT_CV_Functions::view_submit();
  						),
  					),
  				);
-+				$options = apply_filters(PT_CV_PREFIX_ . 'filter_settings_final', $options);
++		                $options = apply_filters(PT_CV_PREFIX_ . 'filter_settings_final', $options);
  				echo PT_Options_Framework::do_settings( $options, $settings );
  				?>
  			</div>
