@@ -25,7 +25,7 @@ Then, you can go to content views and select civicrm content type. You will find
 
 Content Views Pro is not required for this plugin to function. Content Views Pro provides a "live filters" feature in Content Views. If you want to use this feature then we recommend purchasing a [Content Views Pro subscription](https://www.contentviewspro.com/).
 
-The following patch [patches/filter.patch](https://github.com/agileware/content-views-civicrm-data-processor/blob/master/patches/filter.patch) needs to be applied to the **Content Views** plugin to then enable the CiviCRM options to be shown in the Filter Settings tab when using Content Views Pro. 
+The following patch [patches/filter.patch](https://github.com/agileware/content-views-civicrm-data-processor/blob/master/patches/filter.patch) needs to be applied to the **Content Views** plugin (_not the Content Views Pro plugin_). This will then enable the CiviCRM and Data Processor options to be shown in the Filter Settings tab when using Content Views Pro. 
 
 ### Add a live filter for contact name
 
