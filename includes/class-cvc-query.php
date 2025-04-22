@@ -63,11 +63,11 @@ class Content_Views_CiviCRM_Query {
 		if ( $pagination_enable == 'yes' && ! empty( $pagination_limit ) ) {
 			$params['options']['limit'] = $pagination_limit;
 		}
-		$offset = class_exists( 'CVP_LIVE_FILTER_QUERY' ) ? CVP_LIVE_FILTER_QUERY::_get_page(): 0;
-		if ( $offset && $params['options']['limit'] ) {
-			$offset = ( $offset - 1 ) * $params['options']['limit'];
-			$params['options']['offset'] = $offset;
+
+		if (isset($args['offset'])) {
+			$params['options']['offset'] = $args['offset'];
 		}
+
 		// live filters
 		if ( !empty( $_POST['query'] ) ) {
 			parse_str( $_POST['query'], $query );
