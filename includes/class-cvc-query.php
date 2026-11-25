@@ -234,10 +234,26 @@ class Content_Views_CiviCRM_Query {
 			// clear posts from previous short codes
 			$posts = [];
 
+			// Content Views keys items by post ID, so every row needs a unique ID or
+			// rows collapse into one. Rows without an 'id' field (or with a repeated
+			// id) get a negative ID, which can never clash with a real record id.
+			$seen_ids   = [];
+			$missing_id = false;
+			$offset     = isset( $api_params['options']['offset'] ) ? (int) $api_params['options']['offset'] : 0;
+
 			// mock WP_Posts contacts
-			foreach ( $result as $item ) {
+			foreach ( array_values( $result ) as $index => $item ) {
+				$post_id = ( isset( $item['id'] ) && is_scalar( $item['id'] ) && $item['id'] !== '' ) ? $item['id'] : null;
+				if ( $post_id === null ) {
+					$missing_id = true;
+				}
+				if ( $post_id === null || isset( $seen_ids[ (string) $post_id ] ) ) {
+					$post_id = - ( $offset + $index + 1 );
+				}
+				$seen_ids[ (string) $post_id ] = true;
+
 				$post                    = new WP_Post( (object) [] );
-				$post->ID                = $item['id'];
+				$post->ID                = $post_id;
 				$post->post_type         = 'civicrm';
 				$post->filter            = 'raw'; // set to raw to bypass sanitization
 				$post->data_processor_id = $args['data_processor_id'];
@@ -270,6 +286,16 @@ class Content_Views_CiviCRM_Query {
 				// build array
 				$posts[] = $post;
 
+			}
+
+			if ( $missing_id ) {
+				static $warned = false;
+				if ( ! $warned && class_exists( 'Civi' ) ) {
+					$warned = true;
+					Civi::log()->warning( 'Content Views CiviCRM: data processor {id} has no "id" field, item links are disabled. Add a field named "id" to its API output.', [
+						'id' => $args['data_processor_id'],
+					] );
+				}
 			}
 
 			return $posts;

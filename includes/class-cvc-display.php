@@ -231,7 +231,27 @@ class Content_Views_CiviCRM_Display {
 			$url = array_shift( $settingsValueByPrefix );
 		}
 
-		return $url ? add_query_arg( 'id', rawurlencode( (string) $post->ID ), $url ) : '';
+		$record_id = $this->get_record_id( $post );
+
+		return ( $url && $record_id !== null ) ? add_query_arg( 'id', rawurlencode( $record_id ), $url ) : '';
+	}
+
+	/**
+	 * The real record id of an item, from the data processor's 'id' field.
+	 *
+	 * The post ID can be a generated placeholder when the data has no id (or a
+	 * repeated one), so links must use the 'id' field instead.
+	 *
+	 * @param WP_Post $post
+	 *
+	 * @return string|null null when the item has no id field
+	 */
+	private function get_record_id( $post ) {
+		if ( isset( $post->id ) && is_scalar( $post->id ) && $post->id !== '' ) {
+			return (string) $post->id;
+		}
+
+		return null;
 	}
 
 	/**
@@ -254,7 +274,7 @@ class Content_Views_CiviCRM_Display {
 			);
 			$url = array_shift( $settingsValueByPrefix );
 		}
-		if ( ! empty( $url ) ) {
+		if ( ! empty( $url ) && $this->get_record_id( $args[0] ) !== null ) {
 			return $html;
 		}
 		$html = preg_replace( '/<a.*>(.*)<\/a>/', '$1', $html );

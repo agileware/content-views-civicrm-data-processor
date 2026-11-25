@@ -13,7 +13,7 @@ Plugin for integrating [Content Views](https://wordpress.org/plugins/content-vie
 #### Add a new Data Processor in CiviCRM:
 1. Select your data sources
 1. Add an api output
-1. Select the fields, must include a field named id (this field won't be displayed).
+1. Select the fields, including a field named `id` (this field won't be displayed). It is used for the item link URL. Without it, all rows are still listed but items are not linked, and a warning is written to the CiviCRM log.
 1. Select the filters - uncheck the exposed flag if you don't want it to be a live filter.
 1. (optional) set default value for filters
 1. order the fields and filters in the way you want
