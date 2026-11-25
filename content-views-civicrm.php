@@ -3,6 +3,8 @@
  * Plugin Name: Content Views CiviCRM
  * Description: CiviCRM integraton for Content Views.
  * Version: 0.2.4
+ * Requires at least: 6.5
+ * Requires PHP: 8.1
  * Author: Agileware
  * Author URI: https://github.com/agileware/content-views-civicrm
  * Plugin URI: https://github.com/agileware/content-views-civicrm
