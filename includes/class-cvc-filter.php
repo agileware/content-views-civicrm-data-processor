@@ -69,10 +69,12 @@ class Content_Views_CiviCRM_Filter {
 	 * @return bool success or fail
 	 */
 	private function prepare() {
-		if ( $_POST['query'] ) {
-			parse_str( $_POST['query'], $query );
+		$query = [];
+		if ( ! empty( $_POST['query'] ) && is_string( $_POST['query'] ) ) {
+			parse_str( wp_unslash( $_POST['query'] ), $query );
 		}
-		$this->live_filter_parameters = $query ?? [];
+		// keep scalar values only, they are only used to refill the inputs
+		$this->live_filter_parameters = array_map( 'strval', array_filter( $query, 'is_scalar' ) );
 		$this->dpid                   = current( PT_CV_Functions::settings_values_by_prefix( PT_CV_PREFIX . 'data_processor_id', true ) );
 		if ( empty( $this->dpid ) ) {
 			return false;
@@ -141,15 +143,15 @@ class Content_Views_CiviCRM_Filter {
 		}
 		$html = sprintf(
 			'<div class="%s" data-name="%s" data-sid="%s"><label for="%s" class="cvp-label">%s</label><input id="%s" type="text" name="%s" value="%s" data-nosubmit="true" placeholder="%s"></div>',
-			$class,
-			$name,
-			$pt_cv_id,
-			$name,
-			$title,
-			$name,
-			$name,
-			$default,
-			$placeholder
+			esc_attr( $class ),
+			esc_attr( $name ),
+			esc_attr( $pt_cv_id ),
+			esc_attr( $name ),
+			esc_html( $title ),
+			esc_attr( $name ),
+			esc_attr( $name ),
+			esc_attr( $default ),
+			esc_attr( $placeholder )
 		);
 
 		return $html;
@@ -178,18 +180,18 @@ class Content_Views_CiviCRM_Filter {
 		}
 		foreach ( $options as $key => $text ) {
 			$selected_html = '';
-			if ( $key == $selected ) {
+			if ( (string) $key === (string) $selected ) {
 				$selected_html = 'selected';
 			}
-			$options_html .= sprintf( '<option value="%s" %s>%s</option>', $key, $selected_html, $text );
+			$options_html .= sprintf( '<option value="%s" %s>%s</option>', esc_attr( $key ), $selected_html, esc_html( $text ) );
 		}
 		$html = sprintf(
 			'<div class="%s" data-name="%s" data-sid="%s"><label class="cvp-label">%s</label><select name="%s">%s</select></div>',
-			$class,
-			$name,
-			$pt_cv_id,
-			$title,
-			$name,
+			esc_attr( $class ),
+			esc_attr( $name ),
+			esc_attr( $pt_cv_id ),
+			esc_html( $title ),
+			esc_attr( $name ),
 			$options_html
 		);
 
