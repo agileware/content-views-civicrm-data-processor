@@ -26,10 +26,11 @@ Content Views keys items by post ID, so every mock post needs a unique ID. Resul
 ## Directory structure
 
 - `content-views-civicrm.php`: plugin header and bootstrap.
-- `includes/`: the classes described above.
+- `includes/`: the classes described above, and the plugin updater (see [Plugin updates](#plugin-updates)).
 - `settings/`: the Content Views admin settings for the CiviCRM content type.
 - `patches/`: a patch for the Content Views plugin, needed for the CiviCRM settings to show in Filter Settings when Content Views Pro is active. See the [User Guide](USAGE.md#live-filters-with-content-views-pro).
 - `logo/`: images used by the README.
+- `.github/workflows/`: the release workflow, see [Versioning and releases](#versioning-and-releases).
 
 ## Hooks
 
@@ -87,4 +88,14 @@ Views are rendered for anonymous visitors, including through the Content Views p
 ## Versioning and releases
 
 - The plugin version lives in two places in `content-views-civicrm.php`: the `Version:` header and the `$version` property. Bump both and merge that to `master` as part of any release.
-- Tag the release commit with the version number, for example `0.2.4`.
+- Releases are published by the **Cut release** GitHub workflow (`.github/workflows/cut-release.yml`, using the shared `agileware/ci-workflows` workflow). Run it from the repository's **Actions** tab with the new version number, for example `0.2.4`. It checks the `Version:` header matches, copies `master` to the `release` branch without the development files (`.github`, `CONTRIBUTING.md`, `.gitignore`), tags it, and publishes the GitHub release. Do not tag releases by hand.
+- The `release` branch must exist on GitHub before the workflow is first run.
+
+## Plugin updates
+
+The plugin is not hosted on WordPress.org, so it provides its own updates from GitHub releases, the same way as Agileware's other WordPress plugins. `Content_Views_CiviCRM_Upgrader` (`includes/class-cvc-upgrader.php`) is loaded from `content-views-civicrm.php`:
+
+- When WordPress checks for plugin updates, it reads the latest GitHub release of `agileware/content-views-civicrm-data-processor` and offers it as an update when its tag is a newer version than the installed `Version:` header. The result is cached for 12 hours (1 hour after a failed lookup). **Check again** on the WordPress Updates page skips the cache.
+- The update downloads the release's source archive, so everything on the `release` branch is installed on client sites.
+- GitHub archives unpack into a folder named after the repository and commit, so the updater renames it to the folder the plugin is installed in.
+- The `Update URI` header stops WordPress from offering a WordPress.org plugin that happens to have the same folder name as an update.
