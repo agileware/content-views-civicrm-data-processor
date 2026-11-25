@@ -216,10 +216,15 @@ class Content_Views_CiviCRM_Query {
 	 */
 	public function bypass_query( $args ) {
 		// bypass query
-		add_filter( 'posts_pre_query', function ( $posts, $class ) use ( $args ) {
-			if ( isset( $class->query['post_type'] ) && ( $class->query['post_type'] !== 'civicrm' ) ) {
+		// The filter only handles the query of this view: it ignores every query
+		// that is not for the civicrm post type, and removes itself once it has
+		// run, so it never answers a later query (another view or shortcode on
+		// the same page, or any other WP_Query) with this view's results.
+		$callback = function ( $posts, $class ) use ( $args, &$callback ) {
+			if ( ! isset( $class->query['post_type'] ) || $class->query['post_type'] !== 'civicrm' ) {
 				return $posts;
 			}
+			remove_filter( 'posts_pre_query', $callback, 10 );
 			if ( empty( $args['data_processor_id'] ) || ! empty( $args['civicrm_no_results'] ) ) {
 				return [];
 			}
@@ -231,7 +236,7 @@ class Content_Views_CiviCRM_Query {
 			$api_params['check_permissions'] = $this->cvc->api->check_dp_permissions( $dp );
 			$result                          = $this->cvc->api->call_values( $dp['api_entity'], $dp['api_action'], $api_params );
 
-			// clear posts from previous short codes
+			// this view's rows replace anything an earlier filter returned
 			$posts = [];
 
 			// Content Views keys items by post ID, so every row needs a unique ID or
@@ -300,6 +305,7 @@ class Content_Views_CiviCRM_Query {
 
 			return $posts;
 
-		}, 10, 2 );
+		};
+		add_filter( 'posts_pre_query', $callback, 10, 2 );
 	}
 }
