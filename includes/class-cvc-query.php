@@ -64,36 +64,49 @@ class Content_Views_CiviCRM_Query {
 			$params['options']['limit'] = $pagination_limit;
 		}
 
-		if (isset($args['offset'])) {
-			$params['options']['offset'] = $args['offset'];
+		if ( isset( $args['offset'] ) ) {
+			$params['options']['offset'] = max( 0, (int) $args['offset'] );
 		}
 
-		// live filters
-		if ( !empty( $_POST['query'] ) ) {
-			parse_str( $_POST['query'], $query );
-			unset( $query['page'] );
-			foreach ( $query as $key => $value ) {
-				if ( $this->cvc->dp_options->has_option( $key, Content_Views_CiviCRM_Dp_Option::CONTACT_NAME_SEARCH ) ) {
-					$params[ $key ] = [ "IN" => $this->search_contact_name( $value ) ];
-				} else {
-					$params[ $key ] = $value;
-				}
+		// Only the exposed filters of this data processor may be set from the
+		// request. Anything else (API options, return fields, chained calls,
+		// check_permissions, ...) must never reach the API call.
+		$id     = ( is_scalar( $id ) && ctype_digit( (string) $id ) ) ? (int) $id : 0;
+		$fields = [];
+		if ( $id > 0 ) {
+			$fields = $this->cvc->api->call_values( 'DataProcessorFilter', 'get', [
+				'is_exposed'        => 1,
+				'data_processor_id' => $id,
+				'options'           => [ 'limit' => 0 ],
+			] );
+		}
+
+		// live filters (exposed, not required)
+		$live_filters = $this->get_live_filter_values();
+		foreach ( $fields as $field ) {
+			if ( empty( $field['name'] ) || ! empty( $field['is_required'] ) ) {
+				continue;
+			}
+			if ( isset( $live_filters[ $field['name'] ] ) ) {
+				$this->set_filter_param( $params, $field['name'], $live_filters[ $field['name'] ] );
 			}
 		}
+
 		// hidden filters
-		$fields = $this->cvc->api->call_values( 'DataProcessorFilter', 'get', [
-			'is_exposed'        => 1,
-			'data_processor_id' => $id
-		] );
 		foreach ( $fields as $field ) {
+			if ( empty( $field['name'] ) ) {
+				continue;
+			}
 			if ( $field['is_required'] && $this->cvc->dp_options->has_option( $field['name'], Content_Views_CiviCRM_Dp_Option::USER_CONTACT_ID ) ) {
 				$params[ $field['name'] ] = CRM_Core_Session::getLoggedInContactID();
 			}
 			// fixme all required filters should be an exception
 
-			$requestValue = \CRM_Utils_Request::retrieveValue($field['name'], 'String');
-			if (!empty($requestValue)) {
-				$params[$field['name']] = $requestValue;
+			if ( isset( $_REQUEST[ $field['name'] ] ) && is_scalar( $_REQUEST[ $field['name'] ] ) ) {
+				$requestValue = \CRM_Utils_Request::retrieveValue( $field['name'], 'String' );
+				if ( ! empty( $requestValue ) && is_scalar( $requestValue ) ) {
+					$params[ $field['name'] ] = (string) $requestValue;
+				}
 			}
 		}
 
@@ -101,6 +114,48 @@ class Content_Views_CiviCRM_Query {
 		$args['data_processor_id']  = $id;
 
 		return $args;
+	}
+
+	/**
+	 * Read the live filter values posted by Content Views Pro.
+	 *
+	 * Only scalar values are kept, nested arrays from the request are dropped.
+	 *
+	 * @return array filter name => string value
+	 */
+	protected function get_live_filter_values() {
+		if ( empty( $_POST['query'] ) || ! is_string( $_POST['query'] ) ) {
+			return [];
+		}
+		parse_str( wp_unslash( $_POST['query'] ), $query );
+		$values = [];
+		foreach ( $query as $key => $value ) {
+			if ( is_scalar( $value ) ) {
+				$values[ (string) $key ] = (string) $value;
+			}
+		}
+
+		return $values;
+	}
+
+	/**
+	 * Add a filter value from the request to the API parameters.
+	 *
+	 * @param array $params API parameters
+	 * @param string $name filter name (already checked against the data processor filters)
+	 * @param string $value scalar value from the request
+	 */
+	protected function set_filter_param( array &$params, $name, $value ) {
+		if ( $value === '' ) {
+			return;
+		}
+		if ( $this->cvc->dp_options->has_option( $name, Content_Views_CiviCRM_Dp_Option::CONTACT_NAME_SEARCH ) ) {
+			$ids = $this->search_contact_name( $value );
+			// no match must return no rows, never every row
+			$params[ $name ] = [ 'IN' => $ids ? $ids : [ 0 ] ];
+		} else {
+			$params[ $name ] = $value;
+		}
 	}
 
 	protected function search_contact_name( string $search ) {
