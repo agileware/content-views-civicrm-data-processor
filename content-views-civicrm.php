@@ -7,6 +7,8 @@
  * Requires PHP: 8.1
  * Author: Agileware
  * Author URI: https://github.com/agileware/content-views-civicrm
+ * License: GPLv2 or later
+ * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  * Plugin URI: https://github.com/agileware/content-views-civicrm
  * GitHub Plugin URI: agileware/content-views-civicrm
  * Text Domain: content-views-civicrm
