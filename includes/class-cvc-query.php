@@ -243,7 +243,8 @@ class Content_Views_CiviCRM_Query {
 				if ( ! empty( $title ) ) {
 					$title = preg_replace_callback( '/\${(.*)}/U',
 						function ( $matches ) use ( $item ) {
-							return !empty( $item[ $matches[1] ] ) ? $item[ $matches[1] ] : '' ;
+							// the post is marked 'raw', so escape CiviCRM values here
+							return ( ! empty( $item[ $matches[1] ] ) && is_scalar( $item[ $matches[1] ] ) ) ? esc_html( $item[ $matches[1] ] ) : '';
 						},
 						$title );
 				}

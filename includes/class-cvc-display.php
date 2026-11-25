@@ -148,31 +148,35 @@ class Content_Views_CiviCRM_Display {
 		if ( empty( $this->fields ) ) {
 			$this->fields = $this->get_display_fields_by_data_processor( $post->data_processor_id );
 		}
-		$label_html = "<strong>{$this->fields[$field_name]}</strong>: ";
+		// CiviCRM values can be entered by the public (profiles, forms), so all
+		// of them are escaped. Plain values allow the same safe HTML as a post.
+		$label      = isset( $this->fields[ $field_name ] ) ? $this->fields[ $field_name ] : '';
+		$label_html = '<strong>' . esc_html( $label ) . '</strong>: ';
 		// hide the label if the title start with 'hide_label'
 		if ( $this->has_option( $field_name, Content_Views_CiviCRM_Dp_Option::HIDE_LABEL) ) {
 			$label_html = '';
 		}
-		$value_html = $post->$field_name;
+		$raw_value  = isset( $post->$field_name ) && is_scalar( $post->$field_name ) ? (string) $post->$field_name : '';
+		$value_html = wp_kses_post( $raw_value );
 		// if it is a link
 		if ( $this->has_option( $field_name, Content_Views_CiviCRM_Dp_Option::HREF) ) {
-			$href = $post->$field_name;
-			if ( strpos( $post->$field_name, 'http' ) !== 0 ) {
+			$href = $raw_value;
+			if ( strpos( $href, 'http' ) !== 0 ) {
 				$href = 'https://' . $href;
 			}
-			$value_html = "<a href='{$href}' target='_blank'>{$value_html}</a>";
+			$value_html = '<a href="' . esc_url( $href, [ 'http', 'https' ] ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $raw_value ) . '</a>';
 		}
 		// display list if the field is multi-value field
 		if ( $this->has_option( $field_name, Content_Views_CiviCRM_Dp_Option::MULTIVALUE_LIST) ) {
-			$values     = array_filter(explode( ',', $post->$field_name ));
+			$values     = array_filter( explode( ',', $raw_value ) );
 			$value_html = '';
 			foreach ( $values as $value ) {
-				$value_html .= "<li>$value</li>";
+				$value_html .= '<li>' . esc_html( $value ) . '</li>';
 			}
 			$value_html = "<ul>$value_html</ul>";
 		}
 
-		return $html = "<div class='col-md-12 pt-cv-ctf-column'><div class='{$field_name} pt-cv-custom-fields pt-cv-ctf-post_field_1'><div class='pt-cv-ctf-value'>{$label_html}{$value_html}</div></div></div>";
+		return $html = "<div class='col-md-12 pt-cv-ctf-column'><div class='" . esc_attr( $field_name ) . " pt-cv-custom-fields pt-cv-ctf-post_field_1'><div class='pt-cv-ctf-value'>{$label_html}{$value_html}</div></div></div>";
 
 	}
 
@@ -223,7 +227,7 @@ class Content_Views_CiviCRM_Display {
 			$url = array_shift( $settingsValueByPrefix );
 		}
 
-		return $url ? $url . '?id=' . $post->ID : '';
+		return $url ? add_query_arg( 'id', rawurlencode( (string) $post->ID ), $url ) : '';
 	}
 
 	/**
