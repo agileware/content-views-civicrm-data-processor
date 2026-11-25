@@ -1,5 +1,9 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 class Content_Views_CiviCRM_Dp_Option {
 
 	const HREF = 'r';

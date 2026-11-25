@@ -1,5 +1,9 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * Content Views CiviCRM Api class.
  *
@@ -24,14 +28,54 @@ if ( ! class_exists( 'Content_Views_CiviCRM_Api' ) ) {
 
 			try {
 
-				return civicrm_api3( $entity, $action, $params );
+				return $this->call_api( $entity, $action, $params );
 
-			} catch ( CiviCRM_API3_Exception $e ) {
+			} catch ( Exception $e ) {
 
-				wp_die($e->getMessage());
+				// Never show API error details to the visitor, they can reveal
+				// entity names, SQL and configuration. Log them instead.
+				self::log_error( sprintf(
+					'Content Views CiviCRM: API call failed: %s.%s: %s',
+					is_string( $entity ) ? $entity : '',
+					is_string( $action ) ? $action : '',
+					$e->getMessage()
+				) );
 
 			}
-			return [];
+
+			return [
+				'is_error' => 1,
+				'count'    => 0,
+				'values'   => [],
+			];
+		}
+
+		/**
+		 * Make the API call. Subclasses override this to call another API.
+		 *
+		 * @param string $entity
+		 * @param string $action
+		 * @param array $params
+		 *
+		 * @return array $result
+		 * @throws Exception on API errors
+		 */
+		protected function call_api( $entity, $action, $params ) {
+			return civicrm_api3( $entity, $action, $params );
+		}
+
+		/**
+		 * Log an error to the CiviCRM log when CiviCRM is loaded locally,
+		 * otherwise to the PHP error log.
+		 *
+		 * @param string $message
+		 */
+		public static function log_error( $message ) {
+			if ( class_exists( 'Civi' ) ) {
+				Civi::log()->error( $message );
+			} else {
+				error_log( $message );
+			}
 		}
 
 		/**
@@ -46,28 +90,54 @@ if ( ! class_exists( 'Content_Views_CiviCRM_Api' ) ) {
 		 */
 		public function call_values( $entity, $action, $params ) {
 
-			return $this->call( $entity, $action, $params )['values'];
+			$result = $this->call( $entity, $action, $params );
+
+			return ( is_array( $result ) && isset( $result['values'] ) && is_array( $result['values'] ) ) ? $result['values'] : [];
 
 		}
 
 		/**
 		 * Shorthand for getting data processor info
 		 *
-		 * @param $id
+		 * @param int $id
 		 *
-		 * @return mixed
+		 * @return array|null The API output of the data processor, or null when
+		 *   the id is invalid or has no usable API output.
 		 */
 		public function get_data_processor_by_id( $id ) {
-			if ( empty( $id ) ) {
-				throw new Exception( 'No id passed in.' );
+			if ( ! is_scalar( $id ) || ! ctype_digit( (string) $id ) || (int) $id <= 0 ) {
+				return null;
 			}
 			$dp = $this->call_values( 'DataProcessorOutput', 'get', [
 				'sequential'        => 1,
 				'type'              => "api",
-				'data_processor_id' => $id
+				'data_processor_id' => (int) $id
 			] );
 
-			return array_shift( $dp );
+			$dp = array_shift( $dp );
+			if ( empty( $dp['api_entity'] ) || ! is_string( $dp['api_entity'] )
+			     || empty( $dp['api_action'] ) || ! is_string( $dp['api_action'] ) ) {
+				return null;
+			}
+
+			return $dp;
+		}
+
+		/**
+		 * Whether calls to a data processor API output check the permission
+		 * configured on that output for the current user.
+		 *
+		 * Calls made from PHP skip CiviCRM permission checks by default, which
+		 * would let anonymous visitors read any data processor output. Sites
+		 * that deliberately expose a restricted output can turn this off with
+		 * the 'content_views_civicrm_check_permissions' filter.
+		 *
+		 * @param array $dp the data processor API output
+		 *
+		 * @return bool
+		 */
+		public function check_dp_permissions( $dp ) {
+			return (bool) apply_filters( 'content_views_civicrm_check_permissions', true, $dp );
 		}
 
 		public function is_dp_enabled() {
@@ -83,3 +153,30 @@ if ( ! class_exists( 'Content_Views_CiviCRM_Api' ) ) {
 
 }
 
+if ( ! class_exists( 'Content_Views_CiviCRM_Api_Adapter' ) ) {
+
+	/**
+	 * Wraps an API object supplied through the 'content_views_civicrm_api_object'
+	 * filter, for example one that calls a CiviCRM installation on another
+	 * server. The object only needs a call( $entity, $action, $params ) method
+	 * returning an APIv3 style result array; every other method the plugin
+	 * uses is provided here on top of it.
+	 */
+	class Content_Views_CiviCRM_Api_Adapter extends Content_Views_CiviCRM_Api {
+
+		/**
+		 * @var object
+		 */
+		protected $backend;
+
+		public function __construct( $backend ) {
+			$this->backend = $backend;
+		}
+
+		protected function call_api( $entity, $action, $params ) {
+			return $this->backend->call( $entity, $action, $params );
+		}
+
+	}
+
+}

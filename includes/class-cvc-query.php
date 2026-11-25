@@ -1,5 +1,9 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * Content_Views_CiviCRM_Query class.
  */
@@ -64,36 +68,55 @@ class Content_Views_CiviCRM_Query {
 			$params['options']['limit'] = $pagination_limit;
 		}
 
-		if (isset($args['offset'])) {
-			$params['options']['offset'] = $args['offset'];
+		if ( isset( $args['offset'] ) ) {
+			$params['options']['offset'] = max( 0, (int) $args['offset'] );
 		}
 
-		// live filters
-		if ( !empty( $_POST['query'] ) ) {
-			parse_str( $_POST['query'], $query );
-			unset( $query['page'] );
-			foreach ( $query as $key => $value ) {
-				if ( $this->cvc->dp_options->has_option( $key, Content_Views_CiviCRM_Dp_Option::CONTACT_NAME_SEARCH ) ) {
-					$params[ $key ] = [ "IN" => $this->search_contact_name( $value ) ];
-				} else {
-					$params[ $key ] = $value;
-				}
+		// Only the exposed filters of this data processor may be set from the
+		// request. Anything else (API options, return fields, chained calls,
+		// check_permissions, ...) must never reach the API call.
+		$id     = ( is_scalar( $id ) && ctype_digit( (string) $id ) ) ? (int) $id : 0;
+		$fields = [];
+		if ( $id > 0 ) {
+			$fields = $this->cvc->api->call_values( 'DataProcessorFilter', 'get', [
+				'is_exposed'        => 1,
+				'data_processor_id' => $id,
+				'options'           => [ 'limit' => 0 ],
+			] );
+		}
+
+		// live filters (exposed, not required)
+		$live_filters = $this->get_live_filter_values();
+		foreach ( $fields as $field ) {
+			if ( empty( $field['name'] ) || ! empty( $field['is_required'] ) ) {
+				continue;
+			}
+			if ( isset( $live_filters[ $field['name'] ] ) ) {
+				$this->set_filter_param( $params, $field['name'], $live_filters[ $field['name'] ] );
 			}
 		}
+
 		// hidden filters
-		$fields = $this->cvc->api->call_values( 'DataProcessorFilter', 'get', [
-			'is_exposed'        => 1,
-			'data_processor_id' => $id
-		] );
 		foreach ( $fields as $field ) {
+			if ( empty( $field['name'] ) ) {
+				continue;
+			}
 			if ( $field['is_required'] && $this->cvc->dp_options->has_option( $field['name'], Content_Views_CiviCRM_Dp_Option::USER_CONTACT_ID ) ) {
-				$params[ $field['name'] ] = CRM_Core_Session::getLoggedInContactID();
+				// The current contact filter must never be taken from the request,
+				// otherwise any visitor could read another contact's records.
+				$contact_id = $this->get_current_contact_id();
+				if ( $contact_id <= 0 ) {
+					// Not logged in: a missing filter value would return every row.
+					$args['civicrm_no_results'] = true;
+				}
+				$params[ $field['name'] ] = $contact_id;
+				continue;
 			}
 			// fixme all required filters should be an exception
 
-			$requestValue = \CRM_Utils_Request::retrieveValue($field['name'], 'String');
-			if (!empty($requestValue)) {
-				$params[$field['name']] = $requestValue;
+			$requestValue = $this->get_request_value( $field['name'] );
+			if ( ! empty( $requestValue ) ) {
+				$params[ $field['name'] ] = $requestValue;
 			}
 		}
 
@@ -101,6 +124,86 @@ class Content_Views_CiviCRM_Query {
 		$args['data_processor_id']  = $id;
 
 		return $args;
+	}
+
+	/**
+	 * The CiviCRM contact id of the logged-in user, for the current contact
+	 * (_cvc_i) filter.
+	 *
+	 * Uses the local CiviCRM session. Sites without a local CiviCRM (a custom
+	 * API object talking to another server) can supply the id with the
+	 * 'content_views_civicrm_current_contact_id' filter; without it the
+	 * current contact filter returns no results.
+	 *
+	 * @return int contact id, 0 when unknown
+	 */
+	protected function get_current_contact_id() {
+		$contact_id = class_exists( 'CRM_Core_Session' ) ? CRM_Core_Session::getLoggedInContactID() : 0;
+		$contact_id = apply_filters( 'content_views_civicrm_current_contact_id', $contact_id );
+
+		return ( is_scalar( $contact_id ) && ctype_digit( (string) $contact_id ) ) ? (int) $contact_id : 0;
+	}
+
+	/**
+	 * A filter value given in the page request (URL or form).
+	 *
+	 * @param string $name filter name
+	 *
+	 * @return string the value, '' when not set or not a scalar
+	 */
+	protected function get_request_value( $name ) {
+		if ( ! isset( $_REQUEST[ $name ] ) || ! is_scalar( $_REQUEST[ $name ] ) ) {
+			return '';
+		}
+		if ( class_exists( 'CRM_Utils_Request' ) ) {
+			$value = CRM_Utils_Request::retrieveValue( $name, 'String' );
+
+			return is_scalar( $value ) ? (string) $value : '';
+		}
+
+		return sanitize_text_field( wp_unslash( (string) $_REQUEST[ $name ] ) );
+	}
+
+	/**
+	 * Read the live filter values posted by Content Views Pro.
+	 *
+	 * Only scalar values are kept, nested arrays from the request are dropped.
+	 *
+	 * @return array filter name => string value
+	 */
+	protected function get_live_filter_values() {
+		if ( empty( $_POST['query'] ) || ! is_string( $_POST['query'] ) ) {
+			return [];
+		}
+		parse_str( wp_unslash( $_POST['query'] ), $query );
+		$values = [];
+		foreach ( $query as $key => $value ) {
+			if ( is_scalar( $value ) ) {
+				$values[ (string) $key ] = (string) $value;
+			}
+		}
+
+		return $values;
+	}
+
+	/**
+	 * Add a filter value from the request to the API parameters.
+	 *
+	 * @param array $params API parameters
+	 * @param string $name filter name (already checked against the data processor filters)
+	 * @param string $value scalar value from the request
+	 */
+	protected function set_filter_param( array &$params, $name, $value ) {
+		if ( $value === '' ) {
+			return;
+		}
+		if ( $this->cvc->dp_options->has_option( $name, Content_Views_CiviCRM_Dp_Option::CONTACT_NAME_SEARCH ) ) {
+			$ids = $this->search_contact_name( $value );
+			// no match must return no rows, never every row
+			$params[ $name ] = [ 'IN' => $ids ? $ids : [ 0 ] ];
+		} else {
+			$params[ $name ] = $value;
+		}
 	}
 
 	protected function search_contact_name( string $search ) {
@@ -149,28 +252,49 @@ class Content_Views_CiviCRM_Query {
 	 */
 	public function bypass_query( $args ) {
 		// bypass query
-		add_filter( 'posts_pre_query', function ( $posts, $class ) use ( $args ) {
-			if ( isset( $class->query['post_type'] ) && ( $class->query['post_type'] !== 'civicrm' ) ) {
+		// The filter only handles the query of this view: it ignores every query
+		// that is not for the civicrm post type, and removes itself once it has
+		// run, so it never answers a later query (another view or shortcode on
+		// the same page, or any other WP_Query) with this view's results.
+		$callback = function ( $posts, $class ) use ( $args, &$callback ) {
+			if ( ! isset( $class->query['post_type'] ) || $class->query['post_type'] !== 'civicrm' ) {
 				return $posts;
 			}
-			if ( empty( $args['data_processor_id'] ) ) {
+			remove_filter( 'posts_pre_query', $callback, 10 );
+			if ( empty( $args['data_processor_id'] ) || ! empty( $args['civicrm_no_results'] ) ) {
 				return [];
 			}
-			$dp     = $this->cvc->api->call_values( 'DataProcessorOutput', 'get', [
-				'sequential'        => 1,
-				'type'              => "api",
-				'data_processor_id' => $args['data_processor_id']
-			] );
-			$dp     = array_shift( $dp );
-			$result = $this->cvc->api->call_values( $dp['api_entity'], $dp['api_action'], $args['civicrm_api_params'] );
+			$dp = $this->cvc->api->get_data_processor_by_id( $args['data_processor_id'] );
+			if ( empty( $dp ) ) {
+				return [];
+			}
+			$api_params                      = $args['civicrm_api_params'];
+			$api_params['check_permissions'] = $this->cvc->api->check_dp_permissions( $dp );
+			$result                          = $this->cvc->api->call_values( $dp['api_entity'], $dp['api_action'], $api_params );
 
-			// clear posts from previous short codes
+			// this view's rows replace anything an earlier filter returned
 			$posts = [];
 
+			// Content Views keys items by post ID, so every row needs a unique ID or
+			// rows collapse into one. Rows without an 'id' field (or with a repeated
+			// id) get a negative ID, which can never clash with a real record id.
+			$seen_ids   = [];
+			$missing_id = false;
+			$offset     = isset( $api_params['options']['offset'] ) ? (int) $api_params['options']['offset'] : 0;
+
 			// mock WP_Posts contacts
-			foreach ( $result as $item ) {
+			foreach ( array_values( $result ) as $index => $item ) {
+				$post_id = ( isset( $item['id'] ) && is_scalar( $item['id'] ) && $item['id'] !== '' ) ? $item['id'] : null;
+				if ( $post_id === null ) {
+					$missing_id = true;
+				}
+				if ( $post_id === null || isset( $seen_ids[ (string) $post_id ] ) ) {
+					$post_id = - ( $offset + $index + 1 );
+				}
+				$seen_ids[ (string) $post_id ] = true;
+
 				$post                    = new WP_Post( (object) [] );
-				$post->ID                = $item['id'];
+				$post->ID                = $post_id;
 				$post->post_type         = 'civicrm';
 				$post->filter            = 'raw'; // set to raw to bypass sanitization
 				$post->data_processor_id = $args['data_processor_id'];
@@ -180,7 +304,8 @@ class Content_Views_CiviCRM_Query {
 				if ( ! empty( $title ) ) {
 					$title = preg_replace_callback( '/\${(.*)}/U',
 						function ( $matches ) use ( $item ) {
-							return !empty( $item[ $matches[1] ] ) ? $item[ $matches[1] ] : '' ;
+							// the post is marked 'raw', so escape CiviCRM values here
+							return ( ! empty( $item[ $matches[1] ] ) && is_scalar( $item[ $matches[1] ] ) ) ? esc_html( $item[ $matches[1] ] ) : '';
 						},
 						$title );
 				}
@@ -204,8 +329,19 @@ class Content_Views_CiviCRM_Query {
 
 			}
 
+			if ( $missing_id ) {
+				static $warned = false;
+				if ( ! $warned && class_exists( 'Civi' ) ) {
+					$warned = true;
+					Civi::log()->warning( 'Content Views CiviCRM: data processor {id} has no "id" field, item links are disabled. Add a field named "id" to its API output.', [
+						'id' => $args['data_processor_id'],
+					] );
+				}
+			}
+
 			return $posts;
 
-		}, 10, 2 );
+		};
+		add_filter( 'posts_pre_query', $callback, 10, 2 );
 	}
 }

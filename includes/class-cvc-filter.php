@@ -1,5 +1,9 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * Content_Views_CiviCRM_Settings_Display class.
  */
@@ -69,10 +73,12 @@ class Content_Views_CiviCRM_Filter {
 	 * @return bool success or fail
 	 */
 	private function prepare() {
-		if ( $_POST['query'] ) {
-			parse_str( $_POST['query'], $query );
+		$query = [];
+		if ( ! empty( $_POST['query'] ) && is_string( $_POST['query'] ) ) {
+			parse_str( wp_unslash( $_POST['query'] ), $query );
 		}
-		$this->live_filter_parameters = $query ?? [];
+		// keep scalar values only, they are only used to refill the inputs
+		$this->live_filter_parameters = array_map( 'strval', array_filter( $query, 'is_scalar' ) );
 		$this->dpid                   = current( PT_CV_Functions::settings_values_by_prefix( PT_CV_PREFIX . 'data_processor_id', true ) );
 		if ( empty( $this->dpid ) ) {
 			return false;
@@ -83,15 +89,10 @@ class Content_Views_CiviCRM_Filter {
 			'is_exposed'        => 1,
 			'data_processor_id' => $this->dpid
 		] );
-		$dp           = $this->cvc->api->call_values( 'DataProcessorOutput', 'get', [
-			'sequential'        => 1,
-			'type'              => "api",
-			'data_processor_id' => $this->dpid
-		] );
+		$dp = $this->cvc->api->get_data_processor_by_id( $this->dpid );
 		if ( empty( $dp ) ) {
 			return false;
 		}
-		$dp = array_shift( $dp );
 		// add options for select dropdown
 		$result = $this->cvc->api->call_values( $dp['api_entity'], 'getfields', [ 'api_action' => $dp['api_action'] ] );
 		foreach ( $this->fields as $key => $field ) {
@@ -115,7 +116,19 @@ class Content_Views_CiviCRM_Filter {
 	 * @return array
 	 */
 	protected function limit_state_options( $options ) {
-		$setting = Civi::settings()->get( 'provinceLimit' );
+		if ( class_exists( 'Civi' ) ) {
+			$setting = Civi::settings()->get( 'provinceLimit' );
+		} else {
+			// no local CiviCRM, read the setting through the API
+			$setting = $this->cvc->api->call_values( 'Setting', 'get', [
+				'sequential' => 1,
+				'return'     => [ 'provinceLimit' ],
+			] );
+			$setting = $setting[0]['provinceLimit'] ?? [];
+		}
+		if ( empty( $setting ) ) {
+			return $options;
+		}
 		$result  = $this->cvc->api->call_values( 'StateProvince', 'get', [
 			'sequential' => 1,
 			'country_id' => [ 'IN' => $setting ],
@@ -146,15 +159,15 @@ class Content_Views_CiviCRM_Filter {
 		}
 		$html = sprintf(
 			'<div class="%s" data-name="%s" data-sid="%s"><label for="%s" class="cvp-label">%s</label><input id="%s" type="text" name="%s" value="%s" data-nosubmit="true" placeholder="%s"></div>',
-			$class,
-			$name,
-			$pt_cv_id,
-			$name,
-			$title,
-			$name,
-			$name,
-			$default,
-			$placeholder
+			esc_attr( $class ),
+			esc_attr( $name ),
+			esc_attr( $pt_cv_id ),
+			esc_attr( $name ),
+			esc_html( $title ),
+			esc_attr( $name ),
+			esc_attr( $name ),
+			esc_attr( $default ),
+			esc_attr( $placeholder )
 		);
 
 		return $html;
@@ -183,18 +196,18 @@ class Content_Views_CiviCRM_Filter {
 		}
 		foreach ( $options as $key => $text ) {
 			$selected_html = '';
-			if ( $key == $selected ) {
+			if ( (string) $key === (string) $selected ) {
 				$selected_html = 'selected';
 			}
-			$options_html .= sprintf( '<option value="%s" %s>%s</option>', $key, $selected_html, $text );
+			$options_html .= sprintf( '<option value="%s" %s>%s</option>', esc_attr( $key ), $selected_html, esc_html( $text ) );
 		}
 		$html = sprintf(
 			'<div class="%s" data-name="%s" data-sid="%s"><label class="cvp-label">%s</label><select name="%s">%s</select></div>',
-			$class,
-			$name,
-			$pt_cv_id,
-			$title,
-			$name,
+			esc_attr( $class ),
+			esc_attr( $name ),
+			esc_attr( $pt_cv_id ),
+			esc_html( $title ),
+			esc_attr( $name ),
 			$options_html
 		);
 

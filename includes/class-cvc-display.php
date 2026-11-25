@@ -1,5 +1,9 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * Content_Views_CiviCRM_Settings_Display class.
  */
@@ -84,9 +88,16 @@ class Content_Views_CiviCRM_Display {
 			return $total;
 		}
 		$args       = apply_filters( PT_CV_PREFIX_ . 'query_parameters', $args );
+		if ( ! empty( $args['civicrm_no_results'] ) ) {
+			return 0;
+		}
 		$api_params = $args['civicrm_api_params'];
-		$dp         = $this->cvc->api->get_data_processor_by_id( $args['data_processor_id'] );
+		$dp         = $this->cvc->api->get_data_processor_by_id( $args['data_processor_id'] ?? 0 );
+		if ( empty( $dp ) || empty( $dp['api_count_action'] ) || ! is_string( $dp['api_count_action'] ) ) {
+			return 0;
+		}
 		unset( $api_params['options'] );
+		$api_params['check_permissions'] = $this->cvc->api->check_dp_permissions( $dp );
 		$result     = $this->cvc->api->call( $dp['api_entity'], $dp['api_count_action'], $api_params );
 		if ( ! $result['is_error'] ) {
 			return $result;
@@ -141,31 +152,35 @@ class Content_Views_CiviCRM_Display {
 		if ( empty( $this->fields ) ) {
 			$this->fields = $this->get_display_fields_by_data_processor( $post->data_processor_id );
 		}
-		$label_html = "<strong>{$this->fields[$field_name]}</strong>: ";
+		// CiviCRM values can be entered by the public (profiles, forms), so all
+		// of them are escaped. Plain values allow the same safe HTML as a post.
+		$label      = isset( $this->fields[ $field_name ] ) ? $this->fields[ $field_name ] : '';
+		$label_html = '<strong>' . esc_html( $label ) . '</strong>: ';
 		// hide the label if the title start with 'hide_label'
 		if ( $this->has_option( $field_name, Content_Views_CiviCRM_Dp_Option::HIDE_LABEL) ) {
 			$label_html = '';
 		}
-		$value_html = $post->$field_name;
+		$raw_value  = isset( $post->$field_name ) && is_scalar( $post->$field_name ) ? (string) $post->$field_name : '';
+		$value_html = wp_kses_post( $raw_value );
 		// if it is a link
 		if ( $this->has_option( $field_name, Content_Views_CiviCRM_Dp_Option::HREF) ) {
-			$href = $post->$field_name;
-			if ( strpos( $post->$field_name, 'http' ) !== 0 ) {
+			$href = $raw_value;
+			if ( strpos( $href, 'http' ) !== 0 ) {
 				$href = 'https://' . $href;
 			}
-			$value_html = "<a href='{$href}' target='_blank'>{$value_html}</a>";
+			$value_html = '<a href="' . esc_url( $href, [ 'http', 'https' ] ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $raw_value ) . '</a>';
 		}
 		// display list if the field is multi-value field
 		if ( $this->has_option( $field_name, Content_Views_CiviCRM_Dp_Option::MULTIVALUE_LIST) ) {
-			$values     = array_filter(explode( ',', $post->$field_name ));
+			$values     = array_filter( explode( ',', $raw_value ) );
 			$value_html = '';
 			foreach ( $values as $value ) {
-				$value_html .= "<li>$value</li>";
+				$value_html .= '<li>' . esc_html( $value ) . '</li>';
 			}
 			$value_html = "<ul>$value_html</ul>";
 		}
 
-		return $html = "<div class='col-md-12 pt-cv-ctf-column'><div class='{$field_name} pt-cv-custom-fields pt-cv-ctf-post_field_1'><div class='pt-cv-ctf-value'>{$label_html}{$value_html}</div></div></div>";
+		return $html = "<div class='col-md-12 pt-cv-ctf-column'><div class='" . esc_attr( $field_name ) . " pt-cv-custom-fields pt-cv-ctf-post_field_1'><div class='pt-cv-ctf-value'>{$label_html}{$value_html}</div></div></div>";
 
 	}
 
@@ -175,12 +190,10 @@ class Content_Views_CiviCRM_Display {
 	 * @since 0.1
 	 */
 	public function get_display_fields_by_data_processor( $id ) {
-		$dp = $this->cvc->api->call_values( 'DataProcessorOutput', 'get', [
-			'sequential'        => 1,
-			'type'              => "api",
-			'data_processor_id' => $id
-		] );
-		$dp = array_shift( $dp );
+		$dp = $this->cvc->api->get_data_processor_by_id( $id );
+		if ( empty( $dp ) ) {
+			return [];
+		}
 
 		return array_reduce( $this->get_fields_for( $dp['api_entity'], $dp['api_action'] ), function ( $fields, $field ) {
 			if ( $field['api.return'] ) {
@@ -218,7 +231,27 @@ class Content_Views_CiviCRM_Display {
 			$url = array_shift( $settingsValueByPrefix );
 		}
 
-		return $url ? $url . '?id=' . $post->ID : '';
+		$record_id = $this->get_record_id( $post );
+
+		return ( $url && $record_id !== null ) ? add_query_arg( 'id', rawurlencode( $record_id ), $url ) : '';
+	}
+
+	/**
+	 * The real record id of an item, from the data processor's 'id' field.
+	 *
+	 * The post ID can be a generated placeholder when the data has no id (or a
+	 * repeated one), so links must use the 'id' field instead.
+	 *
+	 * @param WP_Post $post
+	 *
+	 * @return string|null null when the item has no id field
+	 */
+	private function get_record_id( $post ) {
+		if ( isset( $post->id ) && is_scalar( $post->id ) && $post->id !== '' ) {
+			return (string) $post->id;
+		}
+
+		return null;
 	}
 
 	/**
@@ -241,7 +274,7 @@ class Content_Views_CiviCRM_Display {
 			);
 			$url = array_shift( $settingsValueByPrefix );
 		}
-		if ( ! empty( $url ) ) {
+		if ( ! empty( $url ) && $this->get_record_id( $args[0] ) !== null ) {
 			return $html;
 		}
 		$html = preg_replace( '/<a.*>(.*)<\/a>/', '$1', $html );
