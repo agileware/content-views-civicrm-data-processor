@@ -84,6 +84,9 @@ class Content_Views_CiviCRM_Display {
 			return $total;
 		}
 		$args       = apply_filters( PT_CV_PREFIX_ . 'query_parameters', $args );
+		if ( ! empty( $args['civicrm_no_results'] ) ) {
+			return 0;
+		}
 		$api_params = $args['civicrm_api_params'];
 		$dp         = $this->cvc->api->get_data_processor_by_id( $args['data_processor_id'] ?? 0 );
 		if ( empty( $dp ) || empty( $dp['api_count_action'] ) || ! is_string( $dp['api_count_action'] ) ) {

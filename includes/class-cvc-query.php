@@ -98,7 +98,15 @@ class Content_Views_CiviCRM_Query {
 				continue;
 			}
 			if ( $field['is_required'] && $this->cvc->dp_options->has_option( $field['name'], Content_Views_CiviCRM_Dp_Option::USER_CONTACT_ID ) ) {
-				$params[ $field['name'] ] = CRM_Core_Session::getLoggedInContactID();
+				// The current contact filter must never be taken from the request,
+				// otherwise any visitor could read another contact's records.
+				$contact_id = (int) CRM_Core_Session::getLoggedInContactID();
+				if ( $contact_id <= 0 ) {
+					// Not logged in: a missing filter value would return every row.
+					$args['civicrm_no_results'] = true;
+				}
+				$params[ $field['name'] ] = $contact_id;
+				continue;
 			}
 			// fixme all required filters should be an exception
 
@@ -208,7 +216,7 @@ class Content_Views_CiviCRM_Query {
 			if ( isset( $class->query['post_type'] ) && ( $class->query['post_type'] !== 'civicrm' ) ) {
 				return $posts;
 			}
-			if ( empty( $args['data_processor_id'] ) ) {
+			if ( empty( $args['data_processor_id'] ) || ! empty( $args['civicrm_no_results'] ) ) {
 				return [];
 			}
 			$dp = $this->cvc->api->get_data_processor_by_id( $args['data_processor_id'] );
