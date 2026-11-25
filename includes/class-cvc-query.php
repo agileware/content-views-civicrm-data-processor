@@ -104,7 +104,7 @@ class Content_Views_CiviCRM_Query {
 			if ( $field['is_required'] && $this->cvc->dp_options->has_option( $field['name'], Content_Views_CiviCRM_Dp_Option::USER_CONTACT_ID ) ) {
 				// The current contact filter must never be taken from the request,
 				// otherwise any visitor could read another contact's records.
-				$contact_id = (int) CRM_Core_Session::getLoggedInContactID();
+				$contact_id = $this->get_current_contact_id();
 				if ( $contact_id <= 0 ) {
 					// Not logged in: a missing filter value would return every row.
 					$args['civicrm_no_results'] = true;
@@ -114,11 +114,9 @@ class Content_Views_CiviCRM_Query {
 			}
 			// fixme all required filters should be an exception
 
-			if ( isset( $_REQUEST[ $field['name'] ] ) && is_scalar( $_REQUEST[ $field['name'] ] ) ) {
-				$requestValue = \CRM_Utils_Request::retrieveValue( $field['name'], 'String' );
-				if ( ! empty( $requestValue ) && is_scalar( $requestValue ) ) {
-					$params[ $field['name'] ] = (string) $requestValue;
-				}
+			$requestValue = $this->get_request_value( $field['name'] );
+			if ( ! empty( $requestValue ) ) {
+				$params[ $field['name'] ] = $requestValue;
 			}
 		}
 
@@ -126,6 +124,44 @@ class Content_Views_CiviCRM_Query {
 		$args['data_processor_id']  = $id;
 
 		return $args;
+	}
+
+	/**
+	 * The CiviCRM contact id of the logged-in user, for the current contact
+	 * (_cvc_i) filter.
+	 *
+	 * Uses the local CiviCRM session. Sites without a local CiviCRM (a custom
+	 * API object talking to another server) can supply the id with the
+	 * 'content_views_civicrm_current_contact_id' filter; without it the
+	 * current contact filter returns no results.
+	 *
+	 * @return int contact id, 0 when unknown
+	 */
+	protected function get_current_contact_id() {
+		$contact_id = class_exists( 'CRM_Core_Session' ) ? CRM_Core_Session::getLoggedInContactID() : 0;
+		$contact_id = apply_filters( 'content_views_civicrm_current_contact_id', $contact_id );
+
+		return ( is_scalar( $contact_id ) && ctype_digit( (string) $contact_id ) ) ? (int) $contact_id : 0;
+	}
+
+	/**
+	 * A filter value given in the page request (URL or form).
+	 *
+	 * @param string $name filter name
+	 *
+	 * @return string the value, '' when not set or not a scalar
+	 */
+	protected function get_request_value( $name ) {
+		if ( ! isset( $_REQUEST[ $name ] ) || ! is_scalar( $_REQUEST[ $name ] ) ) {
+			return '';
+		}
+		if ( class_exists( 'CRM_Utils_Request' ) ) {
+			$value = CRM_Utils_Request::retrieveValue( $name, 'String' );
+
+			return is_scalar( $value ) ? (string) $value : '';
+		}
+
+		return sanitize_text_field( wp_unslash( (string) $_REQUEST[ $name ] ) );
 	}
 
 	/**

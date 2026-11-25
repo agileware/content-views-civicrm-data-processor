@@ -116,7 +116,19 @@ class Content_Views_CiviCRM_Filter {
 	 * @return array
 	 */
 	protected function limit_state_options( $options ) {
-		$setting = Civi::settings()->get( 'provinceLimit' );
+		if ( class_exists( 'Civi' ) ) {
+			$setting = Civi::settings()->get( 'provinceLimit' );
+		} else {
+			// no local CiviCRM, read the setting through the API
+			$setting = $this->cvc->api->call_values( 'Setting', 'get', [
+				'sequential' => 1,
+				'return'     => [ 'provinceLimit' ],
+			] );
+			$setting = $setting[0]['provinceLimit'] ?? [];
+		}
+		if ( empty( $setting ) ) {
+			return $options;
+		}
 		$result  = $this->cvc->api->call_values( 'StateProvince', 'get', [
 			'sequential' => 1,
 			'country_id' => [ 'IN' => $setting ],

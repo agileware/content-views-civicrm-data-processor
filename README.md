@@ -68,3 +68,28 @@ Set the extra options by appending `_cvc_XX` to the field name:
 1. Create a field for contact display name.
 1. The default system name is `display_name`.
 1. To display without label change the system name to: `display_name_cvc_h`
+
+## Using a CiviCRM installation on another server
+
+By default the plugin calls CiviCRM installed on the same WordPress site. The plugin does not include a client for a remote CiviCRM, but a developer can supply one with the `content_views_civicrm_api_object` filter. CiviCRM then does not need to be installed on the WordPress site, but Content Views still does.
+
+The object only needs a public `call( $entity, $action, $params )` method. It must make an APIv3 call and return the result array (`is_error`, `count`, `values`), and may throw an `Exception` on errors. For example:
+
+```php
+class My_Remote_CiviCRM_Api {
+	public function call( $entity, $action, $params ) {
+		// Call the remote CiviCRM APIv3 here, for example through CiviProxy or
+		// the CiviMRF connector plugin, and return the decoded result array.
+	}
+}
+
+add_filter( 'content_views_civicrm_api_object', function () {
+	return new My_Remote_CiviCRM_Api();
+} );
+```
+
+Things to consider before using a remote CiviCRM:
+
+- **Permissions:** every call runs as the CiviCRM user that owns the API key, not as the visitor, so the data processor output permission no longer limits what each visitor sees. Use a dedicated API user with only the permissions the public views need.
+- **Current contact filter (`_cvc_i`):** the remote CiviCRM does not know who is logged in to WordPress. Supply the logged-in user's remote contact id with the `content_views_civicrm_current_contact_id` filter, otherwise views using this filter show no results.
+- **Speed:** each view makes several API calls per page, so consider caching in your API object.

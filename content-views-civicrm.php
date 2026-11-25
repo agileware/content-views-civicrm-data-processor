@@ -130,16 +130,20 @@ class Content_Views_CiviCRM {
 
 	/**
 	 * Check plugin dependencies.
+	 *
+	 * @param bool $local_civicrm whether CiviCRM must be installed on this site,
+	 *   false when a custom API object talks to CiviCRM
+	 *
 	 * @return bool True if dependencies exist
 	 * @since 0.1
 	 */
-	private function check_dependencies() {
+	private function check_dependencies( $local_civicrm = true ) {
 		// content views
 		if ( ! class_exists( 'PT_Content_Views' ) ) {
 			return false;
 		}
 		// civi
-		if ( ! function_exists( 'civi_wp' ) ) {
+		if ( $local_civicrm && ! function_exists( 'civi_wp' ) ) {
 			return false;
 		}
 
@@ -185,14 +189,21 @@ class Content_Views_CiviCRM {
 		/**
 		 * Filter CiviCRM Api object.
 		 *
-		 * Hook your own api wrapper implementation, the only
-		 * requirement is that it must have a 'call' and 'call_values' method.
+		 * Hook your own API object, for example one that calls a CiviCRM
+		 * installation on another server. The only requirement is a public
+		 * call( $entity, $action, $params ) method that returns an APIv3 style
+		 * result array ('is_error', 'count', 'values') and may throw an
+		 * Exception on errors. See the README.
 		 *
 		 * @since 0.1
 		 */
-		$this->api = apply_filters( 'content_views_civicrm_api_object', false );
+		$api = apply_filters( 'content_views_civicrm_api_object', false );
+		if ( is_object( $api ) && ! is_callable( [ $api, 'call' ] ) ) {
+			Content_Views_CiviCRM_Api::log_error( 'Content Views CiviCRM: the content_views_civicrm_api_object filter returned an object without a call() method, it is ignored.' );
+			$api = false;
+		}
 
-		if ( ! is_object( $this->api ) && ! $this->check_dependencies() ) {
+		if ( ! $this->check_dependencies( ! is_object( $api ) ) ) {
 
 			add_action( 'admin_notices', [ $this, 'show_notice' ] );
 
@@ -200,7 +211,12 @@ class Content_Views_CiviCRM {
 
 		}
 
-		$this->api      = $this->api ? $this->api : ( new Content_Views_CiviCRM_Api );
+		if ( ! is_object( $api ) ) {
+			$api = new Content_Views_CiviCRM_Api;
+		} elseif ( ! $api instanceof Content_Views_CiviCRM_Api ) {
+			$api = new Content_Views_CiviCRM_Api_Adapter( $api );
+		}
+		$this->api      = $api;
 		$this->query    = new Content_Views_CiviCRM_Query( $this );
 		$this->settings = new Content_Views_CiviCRM_Settings( $this );
 		$this->display = new Content_Views_CiviCRM_Display( $this );
@@ -215,9 +231,7 @@ class Content_Views_CiviCRM {
 	 */
 	public function show_notice() {
 
-		printf(
-			__( '<div class="notice notice-error"><p>It looks like CiviCRM is not activated, Content Views CiviCRM integration requires CiviCRM to be installed and activated.</p></div>', 'content-views-civicrm' )
-		);
+		echo '<div class="notice notice-error"><p>' . esc_html__( 'Content Views CiviCRM requires the Content Views plugin and CiviCRM to be installed and activated.', 'content-views-civicrm' ) . '</p></div>';
 
 	}
 

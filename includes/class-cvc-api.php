@@ -28,19 +28,18 @@ if ( ! class_exists( 'Content_Views_CiviCRM_Api' ) ) {
 
 			try {
 
-				return civicrm_api3( $entity, $action, $params );
+				return $this->call_api( $entity, $action, $params );
 
 			} catch ( Exception $e ) {
 
 				// Never show API error details to the visitor, they can reveal
 				// entity names, SQL and configuration. Log them instead.
-				if ( class_exists( 'Civi' ) ) {
-					Civi::log()->error( 'Content Views CiviCRM: API call failed: {entity}.{action}: {message}', [
-						'entity'  => is_string( $entity ) ? $entity : '',
-						'action'  => is_string( $action ) ? $action : '',
-						'message' => $e->getMessage(),
-					] );
-				}
+				self::log_error( sprintf(
+					'Content Views CiviCRM: API call failed: %s.%s: %s',
+					is_string( $entity ) ? $entity : '',
+					is_string( $action ) ? $action : '',
+					$e->getMessage()
+				) );
 
 			}
 
@@ -49,6 +48,34 @@ if ( ! class_exists( 'Content_Views_CiviCRM_Api' ) ) {
 				'count'    => 0,
 				'values'   => [],
 			];
+		}
+
+		/**
+		 * Make the API call. Subclasses override this to call another API.
+		 *
+		 * @param string $entity
+		 * @param string $action
+		 * @param array $params
+		 *
+		 * @return array $result
+		 * @throws Exception on API errors
+		 */
+		protected function call_api( $entity, $action, $params ) {
+			return civicrm_api3( $entity, $action, $params );
+		}
+
+		/**
+		 * Log an error to the CiviCRM log when CiviCRM is loaded locally,
+		 * otherwise to the PHP error log.
+		 *
+		 * @param string $message
+		 */
+		public static function log_error( $message ) {
+			if ( class_exists( 'Civi' ) ) {
+				Civi::log()->error( $message );
+			} else {
+				error_log( $message );
+			}
 		}
 
 		/**
@@ -126,3 +153,30 @@ if ( ! class_exists( 'Content_Views_CiviCRM_Api' ) ) {
 
 }
 
+if ( ! class_exists( 'Content_Views_CiviCRM_Api_Adapter' ) ) {
+
+	/**
+	 * Wraps an API object supplied through the 'content_views_civicrm_api_object'
+	 * filter, for example one that calls a CiviCRM installation on another
+	 * server. The object only needs a call( $entity, $action, $params ) method
+	 * returning an APIv3 style result array; every other method the plugin
+	 * uses is provided here on top of it.
+	 */
+	class Content_Views_CiviCRM_Api_Adapter extends Content_Views_CiviCRM_Api {
+
+		/**
+		 * @var object
+		 */
+		protected $backend;
+
+		public function __construct( $backend ) {
+			$this->backend = $backend;
+		}
+
+		protected function call_api( $entity, $action, $params ) {
+			return $this->backend->call( $entity, $action, $params );
+		}
+
+	}
+
+}
