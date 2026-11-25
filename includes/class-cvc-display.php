@@ -93,6 +93,7 @@ class Content_Views_CiviCRM_Display {
 			return 0;
 		}
 		unset( $api_params['options'] );
+		$api_params['check_permissions'] = $this->cvc->api->check_dp_permissions( $dp );
 		$result     = $this->cvc->api->call( $dp['api_entity'], $dp['api_count_action'], $api_params );
 		if ( ! $result['is_error'] ) {
 			return $result;

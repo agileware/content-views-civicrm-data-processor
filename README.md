@@ -19,6 +19,16 @@ Plugin for integrating [Content Views](https://wordpress.org/plugins/content-vie
 1. order the fields and filters in the way you want
 1. save it
 
+#### Permissions
+
+The data is fetched with CiviCRM permission checks enabled, so the permission set on the Data Processor **API output** applies to the person viewing the page. For a view shown to anonymous visitors, set the output permission to one that the anonymous role has in CiviCRM. Choose this carefully, as anyone with that permission can read the output.
+
+Sites that need the old behaviour (no permission check) can opt out with:
+
+```php
+add_filter( 'content_views_civicrm_check_permissions', '__return_false' );
+```
+
 Then, you can go to content views and select civicrm content type. You will find it under the Data Processor dropdown. Preview it!
 
 ## Content Views Pro is optional

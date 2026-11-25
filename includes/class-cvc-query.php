@@ -223,7 +223,9 @@ class Content_Views_CiviCRM_Query {
 			if ( empty( $dp ) ) {
 				return [];
 			}
-			$result = $this->cvc->api->call_values( $dp['api_entity'], $dp['api_action'], $args['civicrm_api_params'] );
+			$api_params                      = $args['civicrm_api_params'];
+			$api_params['check_permissions'] = $this->cvc->api->check_dp_permissions( $dp );
+			$result                          = $this->cvc->api->call_values( $dp['api_entity'], $dp['api_action'], $api_params );
 
 			// clear posts from previous short codes
 			$posts = [];

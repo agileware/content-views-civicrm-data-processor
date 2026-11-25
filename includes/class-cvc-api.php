@@ -92,6 +92,23 @@ if ( ! class_exists( 'Content_Views_CiviCRM_Api' ) ) {
 			return $dp;
 		}
 
+		/**
+		 * Whether calls to a data processor API output check the permission
+		 * configured on that output for the current user.
+		 *
+		 * Calls made from PHP skip CiviCRM permission checks by default, which
+		 * would let anonymous visitors read any data processor output. Sites
+		 * that deliberately expose a restricted output can turn this off with
+		 * the 'content_views_civicrm_check_permissions' filter.
+		 *
+		 * @param array $dp the data processor API output
+		 *
+		 * @return bool
+		 */
+		public function check_dp_permissions( $dp ) {
+			return (bool) apply_filters( 'content_views_civicrm_check_permissions', true, $dp );
+		}
+
 		public function is_dp_enabled() {
 			static $entities = null;
 			if ( ! $entities ) {
