@@ -26,12 +26,25 @@ if ( ! class_exists( 'Content_Views_CiviCRM_Api' ) ) {
 
 				return civicrm_api3( $entity, $action, $params );
 
-			} catch ( CiviCRM_API3_Exception $e ) {
+			} catch ( Exception $e ) {
 
-				wp_die($e->getMessage());
+				// Never show API error details to the visitor, they can reveal
+				// entity names, SQL and configuration. Log them instead.
+				if ( class_exists( 'Civi' ) ) {
+					Civi::log()->error( 'Content Views CiviCRM: API call failed: {entity}.{action}: {message}', [
+						'entity'  => is_string( $entity ) ? $entity : '',
+						'action'  => is_string( $action ) ? $action : '',
+						'message' => $e->getMessage(),
+					] );
+				}
 
 			}
-			return [];
+
+			return [
+				'is_error' => 1,
+				'count'    => 0,
+				'values'   => [],
+			];
 		}
 
 		/**
@@ -46,7 +59,9 @@ if ( ! class_exists( 'Content_Views_CiviCRM_Api' ) ) {
 		 */
 		public function call_values( $entity, $action, $params ) {
 
-			return $this->call( $entity, $action, $params )['values'];
+			$result = $this->call( $entity, $action, $params );
+
+			return ( is_array( $result ) && isset( $result['values'] ) && is_array( $result['values'] ) ) ? $result['values'] : [];
 
 		}
 
