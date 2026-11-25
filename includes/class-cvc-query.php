@@ -156,12 +156,10 @@ class Content_Views_CiviCRM_Query {
 			if ( empty( $args['data_processor_id'] ) ) {
 				return [];
 			}
-			$dp     = $this->cvc->api->call_values( 'DataProcessorOutput', 'get', [
-				'sequential'        => 1,
-				'type'              => "api",
-				'data_processor_id' => $args['data_processor_id']
-			] );
-			$dp     = array_shift( $dp );
+			$dp = $this->cvc->api->get_data_processor_by_id( $args['data_processor_id'] );
+			if ( empty( $dp ) ) {
+				return [];
+			}
 			$result = $this->cvc->api->call_values( $dp['api_entity'], $dp['api_action'], $args['civicrm_api_params'] );
 
 			// clear posts from previous short codes

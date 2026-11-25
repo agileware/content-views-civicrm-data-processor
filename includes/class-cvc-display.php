@@ -85,7 +85,10 @@ class Content_Views_CiviCRM_Display {
 		}
 		$args       = apply_filters( PT_CV_PREFIX_ . 'query_parameters', $args );
 		$api_params = $args['civicrm_api_params'];
-		$dp         = $this->cvc->api->get_data_processor_by_id( $args['data_processor_id'] );
+		$dp         = $this->cvc->api->get_data_processor_by_id( $args['data_processor_id'] ?? 0 );
+		if ( empty( $dp ) || empty( $dp['api_count_action'] ) || ! is_string( $dp['api_count_action'] ) ) {
+			return 0;
+		}
 		unset( $api_params['options'] );
 		$result     = $this->cvc->api->call( $dp['api_entity'], $dp['api_count_action'], $api_params );
 		if ( ! $result['is_error'] ) {
@@ -175,12 +178,10 @@ class Content_Views_CiviCRM_Display {
 	 * @since 0.1
 	 */
 	public function get_display_fields_by_data_processor( $id ) {
-		$dp = $this->cvc->api->call_values( 'DataProcessorOutput', 'get', [
-			'sequential'        => 1,
-			'type'              => "api",
-			'data_processor_id' => $id
-		] );
-		$dp = array_shift( $dp );
+		$dp = $this->cvc->api->get_data_processor_by_id( $id );
+		if ( empty( $dp ) ) {
+			return [];
+		}
 
 		return array_reduce( $this->get_fields_for( $dp['api_entity'], $dp['api_action'] ), function ( $fields, $field ) {
 			if ( $field['api.return'] ) {

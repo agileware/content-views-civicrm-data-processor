@@ -83,15 +83,10 @@ class Content_Views_CiviCRM_Filter {
 			'is_exposed'        => 1,
 			'data_processor_id' => $this->dpid
 		] );
-		$dp           = $this->cvc->api->call_values( 'DataProcessorOutput', 'get', [
-			'sequential'        => 1,
-			'type'              => "api",
-			'data_processor_id' => $this->dpid
-		] );
+		$dp = $this->cvc->api->get_data_processor_by_id( $this->dpid );
 		if ( empty( $dp ) ) {
 			return false;
 		}
-		$dp = array_shift( $dp );
 		// add options for select dropdown
 		$result = $this->cvc->api->call_values( $dp['api_entity'], 'getfields', [ 'api_action' => $dp['api_action'] ] );
 		foreach ( $this->fields as $key => $field ) {
