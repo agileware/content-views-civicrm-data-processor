@@ -11,6 +11,10 @@
  * Domain Path: /languages
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 class Content_Views_CiviCRM {
 
 	/**
