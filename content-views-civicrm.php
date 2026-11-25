@@ -11,6 +11,7 @@
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  * Plugin URI: https://github.com/agileware/content-views-civicrm-data-processor
  * GitHub Plugin URI: agileware/content-views-civicrm-data-processor
+ * Update URI: https://github.com/agileware/content-views-civicrm-data-processor
  * Text Domain: content-views-civicrm
  * Domain Path: /languages
  */
@@ -18,6 +19,13 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+define( 'CONTENT_VIEWS_CIVICRM_GITHUB_REPO', 'agileware/content-views-civicrm-data-processor' );
+
+// Plugin updates from GitHub releases. Set up outside the plugin's own
+// initialisation so updates still work when a dependency is missing.
+require_once __DIR__ . '/includes/class-cvc-upgrader.php';
+( new Content_Views_CiviCRM_Upgrader( __FILE__, CONTENT_VIEWS_CIVICRM_GITHUB_REPO ) )->init();
 
 class Content_Views_CiviCRM {
 
