@@ -6,11 +6,11 @@
  * Requires at least: 6.5
  * Requires PHP: 8.1
  * Author: Agileware
- * Author URI: https://github.com/agileware/content-views-civicrm
+ * Author URI: https://agileware.com.au/
  * License: GPLv2 or later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
- * Plugin URI: https://github.com/agileware/content-views-civicrm
- * GitHub Plugin URI: agileware/content-views-civicrm
+ * Plugin URI: https://github.com/agileware/content-views-civicrm-data-processor
+ * GitHub Plugin URI: agileware/content-views-civicrm-data-processor
  * Text Domain: content-views-civicrm
  * Domain Path: /languages
  */
