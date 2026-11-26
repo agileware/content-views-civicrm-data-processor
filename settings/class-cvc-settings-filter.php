@@ -207,20 +207,71 @@ class Content_Views_CiviCRM_Settings_Filter {
 		];
 	}
 
+	/**
+	 * The data processors the current user may choose for a view.
+	 *
+	 * Only data processors whose API output permission the current user has
+	 * in CiviCRM are listed, so editing views does not let someone publish
+	 * CiviCRM data they cannot read themselves. The empty first option means
+	 * a view whose data processor is not listed for this user shows "Select a
+	 * data processor" rather than silently switching to another one.
+	 *
+	 * @return array data processor id => title
+	 */
 	private function get_data_processor() {
+		$options = [ '' => __( 'Select a data processor', 'content-views-civicrm' ) ];
 		if ( ! $this->cvc->api->is_dp_enabled() ) {
-			return [];
+			return $options;
 		}
-		$result  = $this->cvc->api->call_values( 'DataProcessorOutput', 'get', [
+		$result = $this->cvc->api->call_values( 'DataProcessorOutput', 'get', [
 			'sequential'                  => 1,
 			'type'                        => "api",
+			'options'                     => [ 'limit' => 0 ],
 			'api.DataProcessor.getsingle' => [ 'id' => "\$value.data_processor_id" ],
 		] );
-		$options = [];
 		foreach ( $result as $dp ) {
-			$options[ $dp['data_processor_id'] ] = $dp['api.DataProcessor.getsingle']['title'];
+			if ( empty( $dp['data_processor_id'] ) || ! $this->user_can_use_output( $dp ) ) {
+				continue;
+			}
+			// Data Processor only provides the API of active data processors.
+			if ( isset( $dp['api.DataProcessor.getsingle']['is_active'] ) && empty( $dp['api.DataProcessor.getsingle']['is_active'] ) ) {
+				continue;
+			}
+			$options[ $dp['data_processor_id'] ] = $dp['api.DataProcessor.getsingle']['title'] ?? $dp['data_processor_id'];
 		}
 
 		return $options;
+	}
+
+	/**
+	 * Whether the current user has the permission set on a Data Processor
+	 * API output, the same permission CiviCRM checks when the output is read
+	 * with permission checks.
+	 *
+	 * Without a local CiviCRM (a custom API object talking to another server)
+	 * the permission cannot be checked here, so every output is listed; the
+	 * remote API user's permissions apply instead.
+	 *
+	 * @param array $dp the Data Processor API output
+	 *
+	 * @return bool
+	 */
+	private function user_can_use_output( $dp ) {
+		/**
+		 * Filter: list every data processor to view editors, whatever their
+		 * own CiviCRM permissions, as in version 0.2.4 and earlier.
+		 *
+		 * @param bool $list_all default false
+		 * @param array $dp the Data Processor API output
+		 */
+		if ( apply_filters( 'content_views_civicrm_list_all_data_processors', false, $dp ) ) {
+			return true;
+		}
+		if ( ! class_exists( 'CRM_Core_Permission' ) ) {
+			return true;
+		}
+		$permission = isset( $dp['permission'] ) && is_string( $dp['permission'] ) && $dp['permission'] !== '' ? $dp['permission'] : 'access CiviCRM';
+
+		return (bool) CRM_Core_Permission::check( $permission );
 	}
 }

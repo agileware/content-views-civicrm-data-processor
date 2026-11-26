@@ -28,6 +28,20 @@ add_filter( 'content_views_civicrm_check_permissions', '__return_false' );
 
 ***With this filter, every Data Processor API output can be read by any visitor to a page with a CiviCRM view.***
 
+### Who can choose a data processor
+
+When creating or editing a view, the **Data processor** list only shows the data processors whose API output permission the editor has in CiviCRM. An editor therefore cannot pick a data processor whose data they could not read themselves.
+
+- If an editor opens a view that uses a data processor they do not have permission for, the list shows **Select a data processor**. Saving the view then removes its data processor, and the view shows no results until someone with permission selects one again.
+- This limits the choice offered in the view editor; it does not replace trust. Only give the capability to create or edit views to trusted staff.
+- Without a local CiviCRM (see [Using a CiviCRM installation on another server](#using-a-civicrm-installation-on-another-server)), every data processor is listed.
+
+Sites that want every editor to see every data processor, as in version 0.2.4 and earlier, can use:
+
+```php
+add_filter( 'content_views_civicrm_list_all_data_processors', '__return_true' );
+```
+
 ## Create a view in Content Views
 
 1. Add a new view in Content Views.

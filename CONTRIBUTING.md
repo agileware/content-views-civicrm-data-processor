@@ -38,6 +38,7 @@ Content Views keys items by post ID, so every mock post needs a unique ID. Resul
 
 - `content_views_civicrm_api_object`: supply your own API object instead of calling the local CiviCRM. See [Using a CiviCRM installation on another server](#using-a-civicrm-installation-on-another-server).
 - `content_views_civicrm_check_permissions`: return `false` to call Data Processor API outputs without CiviCRM permission checks. Receives the Data Processor output as the second argument. Defaults to `true`.
+- `content_views_civicrm_list_all_data_processors`: return `true` to list every data processor in the view editor's **Data processor** setting. By default only those whose API output permission the current user has in CiviCRM are listed. Receives the Data Processor output as the second argument. Defaults to `false`.
 - `content_views_civicrm_current_contact_id`: the CiviCRM contact id of the logged-in user, for the current contact (`_cvc_i`) filter. Defaults to the local CiviCRM session's contact id.
 
 ### Actions
