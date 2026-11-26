@@ -34,8 +34,42 @@ class Content_Views_CiviCRM_Settings_Filter {
 	 */
 	public function register_hooks() {
 		add_filter( PT_CV_PREFIX_ . 'post_types_list', [ $this, 'filter_post_types_list' ] );
-		add_filter( PT_CV_PREFIX_ . 'filter_settings_final', [ $this, 'final_filter_settings' ] );
-		add_filter( PT_CV_PREFIX_ . 'custom_filters', [ $this, 'custom_filters' ] );
+		// After Content Views Pro (priority 10), which replaces this filter's value.
+		add_filter( PT_CV_PREFIX_ . 'custom_filters', [ $this, 'custom_filters' ], 20 );
+		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_script' ] );
+	}
+
+	/**
+	 * On the Content Views view edit screen, load the script that hides the
+	 * Content Views "Common" and "Advance" filter groups for CiviCRM views.
+	 */
+	public function enqueue_admin_script() {
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		if ( ! defined( 'PT_CV_DOMAIN' ) || $page !== PT_CV_DOMAIN . '-add' ) {
+			return;
+		}
+
+		$file = $this->cvc->get_path() . 'assets/js/admin-filter-settings.js';
+		wp_enqueue_script(
+			'content-views-civicrm-filter-settings',
+			$this->cvc->get_url() . 'assets/js/admin-filter-settings.js',
+			[ 'jquery' ],
+			file_exists( $file ) ? (string) filemtime( $file ) : false,
+			true
+		);
+		// The group labels as Content Views shows them, in the site language.
+		wp_add_inline_script(
+			'content-views-civicrm-filter-settings',
+			'window.contentViewsCiviCRMFilterSettings = ' . wp_json_encode( [
+				'labels' => [
+					// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Content Views' own labels
+					__( 'Common', 'content-views-query-and-display-post-page' ),
+					// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Content Views' own labels
+					__( 'Advance', 'content-views-query-and-display-post-page' ),
+				],
+			] ) . ';',
+			'before'
+		);
 	}
 
 	/**
@@ -55,53 +89,67 @@ class Content_Views_CiviCRM_Settings_Filter {
 	}
 
 	/**
-	 * This filter can only add one setting block
-	 * and cannot modify other blocks dependencies
+	 * Add the CiviCRM filter settings to the Filter Settings tab.
 	 *
-	 * @param $options
+	 * Content Views shows the value of this filter as a single settings
+	 * block, right after the Content type setting. Other plugins use it too:
+	 * Content Views Pro returns a wrapper block holding several blocks, each
+	 * shown only for its own content type. The CiviCRM block is added to
+	 * that wrapper, or the existing block and the CiviCRM block are put in a
+	 * wrapper of the same form, so every plugin's settings are kept.
+	 *
+	 * @param array $options settings block from other plugins, if any
 	 *
 	 * @return array
 	 */
 	public function custom_filters( $options ) {
-		if ( ! empty( $options ) ) {
-			// Some other plugins using this filter
+		$block = $this->get_civicrm_settings_block();
+		if ( empty( $options ) || ! is_array( $options ) ) {
+			return $block;
+		}
+
+		// Inside a wrapper, blocks are plain label + params groups.
+		unset( $block['extra_setting'] );
+
+		if ( $this->is_wrapper_block( $options ) ) {
+			$options['params'][0]['params'][] = $block;
+
 			return $options;
 		}
-		$options = $this->get_civicrm_settings_block();
 
-		return $options;
+		return [
+			'label'         => [ 'text' => '' ],
+			'extra_setting' => [
+				'params' => [
+					'width' => 12,
+				],
+			],
+			'params'        => [
+				[
+					'type'   => 'group',
+					'params' => [ $options, $block ],
+				],
+			],
+		];
 	}
 
-	public function final_filter_settings( $options ) {
-		$all_post_types_but_civicrm = array_diff( array_keys( PT_CV_Values::post_types() ), [ 'civicrm' ] );
-
-		return array_reduce( $options,
-			function ( $options, $group ) use ( $all_post_types_but_civicrm ) {
-				if ( ! is_array( $group ) ) {
-					$options[] = $group;
-					return $options;
-				}
-				if ( $group['label']['text'] == 'Common' || $group['label']['text'] == 'Advance' ) {
-					$group['dependence'] = [ 'content-type', $all_post_types_but_civicrm ];
-				}
-				$options[] = $group;
-				if ( $group['label']['text'] == 'Content type' ) {
-					$options[] = $this->get_civicrm_settings_block();
-				}
-
-				return $options;
-			},
-			[] );
+	/**
+	 * Whether a settings block is a wrapper holding a group of blocks, as
+	 * returned by Content Views Pro.
+	 *
+	 * @param array $options
+	 *
+	 * @return bool
+	 */
+	private function is_wrapper_block( $options ) {
+		return isset( $options['params'] ) && is_array( $options['params'] ) && count( $options['params'] ) === 1
+		       && isset( $options['params'][0]['type'], $options['params'][0]['params'] )
+		       && $options['params'][0]['type'] === 'group'
+		       && is_array( $options['params'][0]['params'] )
+		       && empty( $options['label']['text'] );
 	}
 
 	private function get_civicrm_settings_block() {
-		// WPCV-24 We only want to add the settings block once
-		static $is_added = false;
-		if ( $is_added ) {
-			return [];
-		}
-		$is_added = true;
-
 		return [
 			'label'         => [ 'text' => __( 'CiviCRM filter', 'content-views-civicrm' ) ],
 			'extra_setting' => [
@@ -159,20 +207,71 @@ class Content_Views_CiviCRM_Settings_Filter {
 		];
 	}
 
+	/**
+	 * The data processors the current user may choose for a view.
+	 *
+	 * Only data processors whose API output permission the current user has
+	 * in CiviCRM are listed, so editing views does not let someone publish
+	 * CiviCRM data they cannot read themselves. The empty first option means
+	 * a view whose data processor is not listed for this user shows "Select a
+	 * data processor" rather than silently switching to another one.
+	 *
+	 * @return array data processor id => title
+	 */
 	private function get_data_processor() {
+		$options = [ '' => __( 'Select a data processor', 'content-views-civicrm' ) ];
 		if ( ! $this->cvc->api->is_dp_enabled() ) {
-			return [];
+			return $options;
 		}
-		$result  = $this->cvc->api->call_values( 'DataProcessorOutput', 'get', [
+		$result = $this->cvc->api->call_values( 'DataProcessorOutput', 'get', [
 			'sequential'                  => 1,
 			'type'                        => "api",
+			'options'                     => [ 'limit' => 0 ],
 			'api.DataProcessor.getsingle' => [ 'id' => "\$value.data_processor_id" ],
 		] );
-		$options = [];
 		foreach ( $result as $dp ) {
-			$options[ $dp['data_processor_id'] ] = $dp['api.DataProcessor.getsingle']['title'];
+			if ( empty( $dp['data_processor_id'] ) || ! $this->user_can_use_output( $dp ) ) {
+				continue;
+			}
+			// Data Processor only provides the API of active data processors.
+			if ( isset( $dp['api.DataProcessor.getsingle']['is_active'] ) && empty( $dp['api.DataProcessor.getsingle']['is_active'] ) ) {
+				continue;
+			}
+			$options[ $dp['data_processor_id'] ] = $dp['api.DataProcessor.getsingle']['title'] ?? $dp['data_processor_id'];
 		}
 
 		return $options;
+	}
+
+	/**
+	 * Whether the current user has the permission set on a Data Processor
+	 * API output, the same permission CiviCRM checks when the output is read
+	 * with permission checks.
+	 *
+	 * Without a local CiviCRM (a custom API object talking to another server)
+	 * the permission cannot be checked here, so every output is listed; the
+	 * remote API user's permissions apply instead.
+	 *
+	 * @param array $dp the Data Processor API output
+	 *
+	 * @return bool
+	 */
+	private function user_can_use_output( $dp ) {
+		/**
+		 * Filter: list every data processor to view editors, whatever their
+		 * own CiviCRM permissions, as in version 0.2.4 and earlier.
+		 *
+		 * @param bool $list_all default false
+		 * @param array $dp the Data Processor API output
+		 */
+		if ( apply_filters( 'content_views_civicrm_list_all_data_processors', false, $dp ) ) {
+			return true;
+		}
+		if ( ! class_exists( 'CRM_Core_Permission' ) ) {
+			return true;
+		}
+		$permission = isset( $dp['permission'] ) && is_string( $dp['permission'] ) && $dp['permission'] !== '' ? $dp['permission'] : 'access CiviCRM';
+
+		return (bool) CRM_Core_Permission::check( $permission );
 	}
 }

@@ -19,7 +19,7 @@ A view backed by CiviCRM shows CiviCRM data to everyone who can see the page it 
 
 For a public view, give the API output a permission that the anonymous role has in CiviCRM, and make sure the output only returns fields and records that are safe to publish. ***Anyone with that permission can read the whole output, not just the parts a view displays.***
 
-Anyone who can create or edit Content Views views can list any Data Processor API output on a page. Only give that capability to trusted staff.
+When creating or editing a view, the **Data processor** list only shows the data processors whose API output permission the editor has in CiviCRM, so editors are not offered data they cannot read themselves. This limits the choice offered in the view editor; it does not replace trust. Anyone who can create or edit Content Views views decides what is published, so only give that capability to trusted staff.
 
 ## Features
 

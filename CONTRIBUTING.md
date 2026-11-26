@@ -27,8 +27,8 @@ Content Views keys items by post ID, so every mock post needs a unique ID. Resul
 
 - `content-views-civicrm.php`: plugin header and bootstrap.
 - `includes/`: the classes described above, and the plugin updater (see [Plugin updates](#plugin-updates)).
-- `settings/`: the Content Views admin settings for the CiviCRM content type.
-- `patches/`: a patch for the Content Views plugin, needed for the CiviCRM settings to show in Filter Settings when Content Views Pro is active. See the [User Guide](USAGE.md#live-filters-with-content-views-pro).
+- `settings/`: the Content Views admin settings for the CiviCRM content type. The CiviCRM filter settings are added through the `pt_cv_custom_filters` hook, after and alongside any settings Content Views Pro adds there.
+- `assets/js/`: admin scripts. `admin-filter-settings.js` hides the Content Views **Common** and **Advance** filter groups on the view edit screen when the content type is CiviCRM, since those settings do not apply to CiviCRM views.
 - `logo/`: images used by the README.
 - `.github/workflows/`: the release workflow, see [Versioning and releases](#versioning-and-releases).
 
@@ -38,6 +38,7 @@ Content Views keys items by post ID, so every mock post needs a unique ID. Resul
 
 - `content_views_civicrm_api_object`: supply your own API object instead of calling the local CiviCRM. See [Using a CiviCRM installation on another server](#using-a-civicrm-installation-on-another-server).
 - `content_views_civicrm_check_permissions`: return `false` to call Data Processor API outputs without CiviCRM permission checks. Receives the Data Processor output as the second argument. Defaults to `true`.
+- `content_views_civicrm_list_all_data_processors`: return `true` to list every data processor in the view editor's **Data processor** setting. By default only those whose API output permission the current user has in CiviCRM are listed. Receives the Data Processor output as the second argument. Defaults to `false`.
 - `content_views_civicrm_current_contact_id`: the CiviCRM contact id of the logged-in user, for the current contact (`_cvc_i`) filter. Defaults to the local CiviCRM session's contact id.
 
 ### Actions
