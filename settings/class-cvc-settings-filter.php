@@ -36,6 +36,40 @@ class Content_Views_CiviCRM_Settings_Filter {
 		add_filter( PT_CV_PREFIX_ . 'post_types_list', [ $this, 'filter_post_types_list' ] );
 		// After Content Views Pro (priority 10), which replaces this filter's value.
 		add_filter( PT_CV_PREFIX_ . 'custom_filters', [ $this, 'custom_filters' ], 20 );
+		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_script' ] );
+	}
+
+	/**
+	 * On the Content Views view edit screen, load the script that hides the
+	 * Content Views "Common" and "Advance" filter groups for CiviCRM views.
+	 */
+	public function enqueue_admin_script() {
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		if ( ! defined( 'PT_CV_DOMAIN' ) || $page !== PT_CV_DOMAIN . '-add' ) {
+			return;
+		}
+
+		$file = $this->cvc->get_path() . 'assets/js/admin-filter-settings.js';
+		wp_enqueue_script(
+			'content-views-civicrm-filter-settings',
+			$this->cvc->get_url() . 'assets/js/admin-filter-settings.js',
+			[ 'jquery' ],
+			file_exists( $file ) ? (string) filemtime( $file ) : false,
+			true
+		);
+		// The group labels as Content Views shows them, in the site language.
+		wp_add_inline_script(
+			'content-views-civicrm-filter-settings',
+			'window.contentViewsCiviCRMFilterSettings = ' . wp_json_encode( [
+				'labels' => [
+					// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Content Views' own labels
+					__( 'Common', 'content-views-query-and-display-post-page' ),
+					// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Content Views' own labels
+					__( 'Advance', 'content-views-query-and-display-post-page' ),
+				],
+			] ) . ';',
+			'before'
+		);
 	}
 
 	/**
