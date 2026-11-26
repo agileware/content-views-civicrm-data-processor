@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Content Views CiviCRM
  * Description: CiviCRM integraton for Content Views.
- * Version: 0.2.4
+ * Version: 0.2.5
  * Requires at least: 6.5
  * Requires PHP: 8.1
  * Author: Agileware
@@ -34,7 +34,7 @@ class Content_Views_CiviCRM {
 	 * @since 0.1
 	 * @var string $version
 	 */
-	protected $version = '0.2.4';
+	protected $version = '0.2.5';
 
 	/**
 	 * Pro dependency.
