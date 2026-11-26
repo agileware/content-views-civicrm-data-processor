@@ -34,8 +34,8 @@ class Content_Views_CiviCRM_Settings_Filter {
 	 */
 	public function register_hooks() {
 		add_filter( PT_CV_PREFIX_ . 'post_types_list', [ $this, 'filter_post_types_list' ] );
-		add_filter( PT_CV_PREFIX_ . 'filter_settings_final', [ $this, 'final_filter_settings' ] );
-		add_filter( PT_CV_PREFIX_ . 'custom_filters', [ $this, 'custom_filters' ] );
+		// After Content Views Pro (priority 10), which replaces this filter's value.
+		add_filter( PT_CV_PREFIX_ . 'custom_filters', [ $this, 'custom_filters' ], 20 );
 	}
 
 	/**
@@ -55,53 +55,67 @@ class Content_Views_CiviCRM_Settings_Filter {
 	}
 
 	/**
-	 * This filter can only add one setting block
-	 * and cannot modify other blocks dependencies
+	 * Add the CiviCRM filter settings to the Filter Settings tab.
 	 *
-	 * @param $options
+	 * Content Views shows the value of this filter as a single settings
+	 * block, right after the Content type setting. Other plugins use it too:
+	 * Content Views Pro returns a wrapper block holding several blocks, each
+	 * shown only for its own content type. The CiviCRM block is added to
+	 * that wrapper, or the existing block and the CiviCRM block are put in a
+	 * wrapper of the same form, so every plugin's settings are kept.
+	 *
+	 * @param array $options settings block from other plugins, if any
 	 *
 	 * @return array
 	 */
 	public function custom_filters( $options ) {
-		if ( ! empty( $options ) ) {
-			// Some other plugins using this filter
+		$block = $this->get_civicrm_settings_block();
+		if ( empty( $options ) || ! is_array( $options ) ) {
+			return $block;
+		}
+
+		// Inside a wrapper, blocks are plain label + params groups.
+		unset( $block['extra_setting'] );
+
+		if ( $this->is_wrapper_block( $options ) ) {
+			$options['params'][0]['params'][] = $block;
+
 			return $options;
 		}
-		$options = $this->get_civicrm_settings_block();
 
-		return $options;
+		return [
+			'label'         => [ 'text' => '' ],
+			'extra_setting' => [
+				'params' => [
+					'width' => 12,
+				],
+			],
+			'params'        => [
+				[
+					'type'   => 'group',
+					'params' => [ $options, $block ],
+				],
+			],
+		];
 	}
 
-	public function final_filter_settings( $options ) {
-		$all_post_types_but_civicrm = array_diff( array_keys( PT_CV_Values::post_types() ), [ 'civicrm' ] );
-
-		return array_reduce( $options,
-			function ( $options, $group ) use ( $all_post_types_but_civicrm ) {
-				if ( ! is_array( $group ) ) {
-					$options[] = $group;
-					return $options;
-				}
-				if ( $group['label']['text'] == 'Common' || $group['label']['text'] == 'Advance' ) {
-					$group['dependence'] = [ 'content-type', $all_post_types_but_civicrm ];
-				}
-				$options[] = $group;
-				if ( $group['label']['text'] == 'Content type' ) {
-					$options[] = $this->get_civicrm_settings_block();
-				}
-
-				return $options;
-			},
-			[] );
+	/**
+	 * Whether a settings block is a wrapper holding a group of blocks, as
+	 * returned by Content Views Pro.
+	 *
+	 * @param array $options
+	 *
+	 * @return bool
+	 */
+	private function is_wrapper_block( $options ) {
+		return isset( $options['params'] ) && is_array( $options['params'] ) && count( $options['params'] ) === 1
+		       && isset( $options['params'][0]['type'], $options['params'][0]['params'] )
+		       && $options['params'][0]['type'] === 'group'
+		       && is_array( $options['params'][0]['params'] )
+		       && empty( $options['label']['text'] );
 	}
 
 	private function get_civicrm_settings_block() {
-		// WPCV-24 We only want to add the settings block once
-		static $is_added = false;
-		if ( $is_added ) {
-			return [];
-		}
-		$is_added = true;
-
 		return [
 			'label'         => [ 'text' => __( 'CiviCRM filter', 'content-views-civicrm' ) ],
 			'extra_setting' => [

@@ -27,8 +27,7 @@ Content Views keys items by post ID, so every mock post needs a unique ID. Resul
 
 - `content-views-civicrm.php`: plugin header and bootstrap.
 - `includes/`: the classes described above, and the plugin updater (see [Plugin updates](#plugin-updates)).
-- `settings/`: the Content Views admin settings for the CiviCRM content type.
-- `patches/`: a patch for the Content Views plugin, needed for the CiviCRM settings to show in Filter Settings when Content Views Pro is active. See the [User Guide](USAGE.md#live-filters-with-content-views-pro).
+- `settings/`: the Content Views admin settings for the CiviCRM content type. The CiviCRM filter settings are added through the `pt_cv_custom_filters` hook, after and alongside any settings Content Views Pro adds there.
 - `logo/`: images used by the README.
 - `.github/workflows/`: the release workflow, see [Versioning and releases](#versioning-and-releases).
 

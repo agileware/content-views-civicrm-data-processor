@@ -60,8 +60,6 @@ With Content Views Pro, every exposed filter that is not required is shown with 
 - Filters on a field with a list of options are shown as a dropdown. For a State/Province field, the options are limited to the countries in the CiviCRM **Available States and Provinces** setting.
 - Other filters are shown as a text box.
 
-The patch [patches/filter.patch](patches/filter.patch) needs to be applied to the **Content Views** plugin (*not the Content Views Pro plugin*). This enables the CiviCRM and Data Processor options to be shown in the Filter Settings tab when using Content Views Pro.
-
 ### Add a live filter for contact name
 
 1. Add a filter to the Data Processor on a contact ID field.
